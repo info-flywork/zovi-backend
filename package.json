@@ -1,0 +1,29 @@
+{
+  "name": "zovi-apis",
+  "version": "1.0.0",
+  "description": "Zovi Node.js API — Firebase Auth + MySQL",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "migrate": "node src/db/migrate.js",
+    "seed:suno": "node src/scripts/seed-suno-tracks.js",
+    "health": "node -e \"require('./src/config/database').healthCheck().then(r=>{console.log(r);process.exit(r.ok?0:1)}).catch(e=>{console.error(e);process.exit(1)})\""
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "axios": "^1.7.9",
+    "dotenv": "^16.3.1",
+    "express": "^5.2.1",
+    "firebase-admin": "^13.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "mysql2": "^3.6.5",
+    "ws": "^8.21.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
