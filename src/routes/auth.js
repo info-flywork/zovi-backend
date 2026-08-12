@@ -4,6 +4,7 @@ const express = require('express');
 const { verifyIdToken } = require('../config/firebase');
 const { authService, requireFirebaseAuth } = require('../middleware/auth');
 const { logger } = require('../utils/logger');
+const { meCache, meKey, invalidateUser } = require('../cache/appCache');
 
 const router = express.Router();
 
@@ -37,6 +38,9 @@ router.post('/sync', async (req, res, next) => {
     const decoded = await verifyIdToken(match[1]);
     const result = await authService.syncFromFirebase(decoded);
 
+    // Sync may flip onboarding flags — drop stale /me.
+    invalidateUser(result.user.id);
+
     logger.info('auth_sync_ok', {
       userId: result.user.id,
       created: result.created,
@@ -64,14 +68,18 @@ router.post('/sync', async (req, res, next) => {
 
 router.get('/me', requireFirebaseAuth, async (req, res, next) => {
   try {
-    const result = await authService.getMe(req.user.id);
-    if (!result) {
+    const data = await meCache.getOrSet(meKey(req.user.id), async () => {
+      const result = await authService.getMe(req.user.id);
+      if (!result) return null;
+      return packAuthPayload(result);
+    });
+    if (!data) {
       return res.status(404).json({
         success: false,
         error: { code: 'USER_NOT_FOUND', message: 'User not found' },
       });
     }
-    return res.json({ success: true, data: packAuthPayload(result) });
+    return res.json({ success: true, data });
   } catch (err) {
     return next(err);
   }

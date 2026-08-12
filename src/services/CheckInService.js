@@ -20,6 +20,9 @@ function orderedPair(a, b) {
   return a < b ? [a, b] : [b, a];
 }
 
+/** Active map markers expire after this many hours. */
+const CHECK_IN_MAP_TTL_HOURS = 24;
+
 class CheckInService {
   constructor({
     stamps = new StampRepository(),
@@ -330,6 +333,16 @@ class CheckInService {
 
   async getActiveOnMap(userId) {
     if (!userId) return null;
+    // Best-effort cleanup so stale pins don't linger forever.
+    await query(
+      `UPDATE check_ins
+       SET is_active_on_map = 0
+       WHERE user_id = ?
+         AND is_active_on_map = 1
+         AND deleted_at IS NULL
+         AND checked_at <= DATE_SUB(UTC_TIMESTAMP(3), INTERVAL ? HOUR)`,
+      [userId, CHECK_IN_MAP_TTL_HOURS],
+    );
     const rows = await query(
       `SELECT
          ci.*,
@@ -342,9 +355,10 @@ class CheckInService {
        WHERE ci.user_id = ?
          AND ci.is_active_on_map = 1
          AND ci.deleted_at IS NULL
+         AND ci.checked_at > DATE_SUB(UTC_TIMESTAMP(3), INTERVAL ? HOUR)
        ORDER BY ci.checked_at DESC
        LIMIT 1`,
-      [userId],
+      [userId, CHECK_IN_MAP_TTL_HOURS],
     );
     const row = rows[0];
     if (!row) return null;

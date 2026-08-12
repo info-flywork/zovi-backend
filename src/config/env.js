@@ -52,6 +52,9 @@ const env = {
       process.env.ONESIGNAL_REST_API_KEY ||
       '',
   },
+  googlePlaces: {
+    apiKey: process.env.GOOGLE_PLACES_API_KEY || '',
+  },
 };
 
 module.exports = { env };

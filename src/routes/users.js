@@ -21,6 +21,13 @@ const { PulseRepository } = require('../services/PulseRepository');
 const { BlockService } = require('../services/BlockService');
 const { CheckInService } = require('../services/CheckInService');
 const { logger } = require('../utils/logger');
+const {
+  publicProfileCache,
+  publicProfileKey,
+  invalidateUser,
+  invalidateUsername,
+  invalidateStoryFeeds,
+} = require('../cache/appCache');
 
 const router = express.Router();
 const usernameService = new UsernameService();
@@ -287,6 +294,13 @@ router.get('/by-username/:username/stamps', requireFirebaseAuth, async (req, res
 });
 router.get('/by-username/:username', requireFirebaseAuth, async (req, res, next) => {
   try {
+    const normalized = normalizeUsername(req.params.username);
+    const cacheKey = publicProfileKey(req.user.id, normalized);
+    const cached = publicProfileCache.get(cacheKey);
+    if (cached !== undefined) {
+      return res.json({ success: true, data: cached });
+    }
+
     const resolved = await resolveVisibleProfileOrRespond(
       req,
       res,
@@ -305,21 +319,23 @@ router.get('/by-username/:username', requireFirebaseAuth, async (req, res, next)
           }),
     ]);
 
+    const data = {
+      profile: {
+        ...profile.toJSON(),
+        isSelf,
+        isFollowing: relationship.following,
+        relationship,
+        hasActiveStory: storySummary.hasStory,
+        storyIsViewed: storySummary.isViewed,
+        blockedByMe: Boolean(blockedByMe),
+        restrictedByMe: Boolean(restrictedByMe),
+      },
+      links: blockedByMe ? [] : links.map((l) => l.toJSON()),
+    };
+    publicProfileCache.set(cacheKey, data);
     return res.json({
       success: true,
-      data: {
-        profile: {
-          ...profile.toJSON(),
-          isSelf,
-          isFollowing: relationship.following,
-          relationship,
-          hasActiveStory: storySummary.hasStory,
-          storyIsViewed: storySummary.isViewed,
-          blockedByMe: Boolean(blockedByMe),
-          restrictedByMe: Boolean(restrictedByMe),
-        },
-        links: blockedByMe ? [] : links.map((l) => l.toJSON()),
-      },
+      data,
     });
   } catch (err) {
     return next(err);
@@ -445,6 +461,9 @@ router.patch('/me/profile', requireFirebaseAuth, async (req, res, next) => {
       birthDate: profile.birthDate,
     });
 
+    invalidateUser(req.user.id);
+    invalidateUsername(profile.username);
+
     return res.json({ success: true, data: { profile: profile.toJSON() } });
   } catch (err) {
     if (err && err.code === 'ER_DUP_ENTRY') {
@@ -509,6 +528,10 @@ router.post(
         avatarUrl: profile.avatarUrl,
       });
 
+      invalidateUser(req.user.id);
+      invalidateUsername(profile.username);
+      invalidateStoryFeeds();
+
       return res.json({
         success: true,
         data: {
@@ -572,6 +595,8 @@ router.put('/me/links', requireFirebaseAuth, async (req, res, next) => {
       userId: req.user.id,
       count: saved.length,
     });
+
+    invalidateUser(req.user.id);
 
     return res.json({
       success: true,

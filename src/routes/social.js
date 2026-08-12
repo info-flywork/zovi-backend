@@ -5,6 +5,11 @@ const { requireFirebaseAuth } = require('../middleware/auth');
 const { FollowService } = require('../services/FollowService');
 const { NotificationService } = require('../services/NotificationService');
 const { logger } = require('../utils/logger');
+const {
+  invalidateUser,
+  invalidateStoryFeeds,
+  publicProfileCache,
+} = require('../cache/appCache');
 
 const router = express.Router();
 const followService = new FollowService();
@@ -22,6 +27,10 @@ router.post('/follow/:userId', requireFirebaseAuth, async (req, res, next) => {
       targetId,
       status: result.status,
     });
+    invalidateUser(req.user.id);
+    invalidateUser(targetId);
+    invalidateStoryFeeds();
+    publicProfileCache.deletePrefix(`prof:${req.user.id}:`);
     return res.json({ success: true, data: result });
   } catch (err) {
     if (err.status) {
@@ -41,6 +50,10 @@ router.delete('/follow/:userId', requireFirebaseAuth, async (req, res, next) => 
   try {
     const targetId = String(req.params.userId || '').trim();
     const result = await followService.unfollow(req.user.id, targetId);
+    invalidateUser(req.user.id);
+    invalidateUser(targetId);
+    invalidateStoryFeeds();
+    publicProfileCache.deletePrefix(`prof:${req.user.id}:`);
     return res.json({ success: true, data: result });
   } catch (err) {
     return next(err);
@@ -57,6 +70,9 @@ router.post(
     try {
       const id = String(req.params.id || '').trim();
       const result = await followService.acceptRequest(req.user.id, id);
+      invalidateUser(req.user.id);
+      invalidateStoryFeeds();
+      publicProfileCache.deletePrefix(`prof:${req.user.id}:`);
       return res.json({ success: true, data: result });
     } catch (err) {
       if (err.status) {

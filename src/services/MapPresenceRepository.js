@@ -6,6 +6,8 @@ const { query } = require('../config/database');
  *  Friends should remain on the map even when the app is closed — not only
  *  while they are actively using it. */
 const PRESENCE_TTL_MINUTES = 7 * 24 * 60;
+/** Check-in pins on the social map expire after 24h. */
+const CHECK_IN_MAP_TTL_HOURS = 24;
 
 function haversineMetersSql() {
   return `(
@@ -146,10 +148,8 @@ class MapPresenceRepository {
   }
 
   /**
-   * Social map layer:
-   * - People the viewer follows (with or without check-in)
-   * - Anyone nearby with a *public* active check-in (friendship not required)
-   * - Friends-only check-ins only when the viewer follows the author
+   * Friends map layer: only people the viewer follows.
+   * Public non-friends live on the Nearby layer instead.
    */
   async listFriendsNearby(viewerId, { lat, lng, radiusMeters = 50000, limit = 80 }) {
     const dist = haversineMetersSql();
@@ -189,6 +189,7 @@ class MapPresenceRepository {
          ON ci.user_id = mp.user_id
          AND ci.is_active_on_map = 1
          AND ci.deleted_at IS NULL
+         AND ci.checked_at > DATE_SUB(UTC_TIMESTAMP(3), INTERVAL ? HOUR)
          AND (
            ci.photo_privacy = 'public'
            OR (
@@ -207,7 +208,6 @@ class MapPresenceRepository {
          )
          AND (
            f.follower_id IS NOT NULL
-           OR ci.id IS NOT NULL
          )
        HAVING distance_m <= ?
        ORDER BY distance_m ASC
@@ -219,6 +219,7 @@ class MapPresenceRepository {
         viewerId, // follows
         viewerId, // streak low
         viewerId, // streak high
+        CHECK_IN_MAP_TTL_HOURS, // check-in map TTL
         viewerId, // self exclude
         PRESENCE_TTL_MINUTES,
         viewerId, // block a
@@ -230,6 +231,11 @@ class MapPresenceRepository {
     return rows.map((r) => this.mapFriendRow(r)).filter(Boolean);
   }
 
+  /**
+   * Nearby layer: non-friends with a *public* account who have recent presence.
+   * Identity is visible (not anonymous); friends are excluded so they stay on
+   * the Friends filter only.
+   */
   async listAnonNearby(viewerId, { lat, lng, radiusMeters = 50000, limit = 80 }) {
     const dist = haversineMetersSql();
     const rows = await query(
@@ -240,11 +246,34 @@ class MapPresenceRepository {
          mp.location_label,
          mp.is_anonymous,
          mp.updated_at,
+         up.username,
+         up.full_name,
+         up.avatar_url,
+         up.location_text,
+         0 AS is_followed,
+         0 AS pair_streak_count,
+         ci.id AS check_in_id,
+         ci.place_name AS check_in_place_name,
+         ci.checked_at AS check_in_checked_at,
+         ci.photo_urls_json AS check_in_photo_urls,
+         ci.is_venue_founder AS check_in_is_founder,
+         ci.photo_privacy AS check_in_photo_privacy,
+         t.label AS title_label,
+         t.emoji AS title_emoji,
          ${dist} AS distance_m
        FROM map_presence mp
+       INNER JOIN user_profiles up ON up.user_id = mp.user_id
+       LEFT JOIN check_ins ci
+         ON ci.user_id = mp.user_id
+         AND ci.is_active_on_map = 1
+         AND ci.deleted_at IS NULL
+         AND ci.checked_at > DATE_SUB(UTC_TIMESTAMP(3), INTERVAL ? HOUR)
+         AND ci.photo_privacy = 'public'
+       LEFT JOIN titles t ON t.id = up.equipped_title_id
        WHERE mp.user_id <> ?
          AND mp.updated_at > DATE_SUB(UTC_TIMESTAMP(3), INTERVAL ? MINUTE)
-         AND mp.is_anonymous = 1
+         AND mp.is_anonymous = 0
+         AND COALESCE(up.account_privacy, 'public') = 'public'
          AND NOT EXISTS (
            SELECT 1 FROM follows f
            WHERE f.follower_id = ? AND f.following_id = mp.user_id
@@ -261,6 +290,7 @@ class MapPresenceRepository {
         lat,
         lng,
         lat,
+        CHECK_IN_MAP_TTL_HOURS,
         viewerId,
         PRESENCE_TTL_MINUTES,
         viewerId,
@@ -270,8 +300,8 @@ class MapPresenceRepository {
         limit,
       ],
     );
-    return rows.map((r) => this.mapAnonRow(r)).filter(Boolean);
+    return rows.map((r) => this.mapFriendRow(r)).filter(Boolean);
   }
 }
 
-module.exports = { MapPresenceRepository, PRESENCE_TTL_MINUTES };
+module.exports = { MapPresenceRepository, PRESENCE_TTL_MINUTES, CHECK_IN_MAP_TTL_HOURS };

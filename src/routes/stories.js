@@ -10,6 +10,7 @@ const { UserRepository } = require('../services/UserRepository');
 const { PulseRepository } = require('../services/PulseRepository');
 const { NotificationService } = require('../services/NotificationService');
 const { logger } = require('../utils/logger');
+const { invalidateStoryFeeds, storyFeedCache, storyFeedKey } = require('../cache/appCache');
 
 const router = express.Router();
 const bunny = new BunnyStorageService();
@@ -120,6 +121,8 @@ router.post(
         hasMusic: Boolean(musicTrackId),
       });
 
+      invalidateStoryFeeds();
+
       return res.status(201).json({
         success: true,
         data: { story: full.toJSON() },
@@ -137,40 +140,47 @@ router.post(
  */
 router.get('/feed', requireFirebaseAuth, async (req, res, next) => {
   try {
-    const profile = await users.getProfile(req.user.id);
-    const [summary, friends] = await Promise.all([
-      stories.getFeedSummaryForUser(req.user.id, req.user.id),
-      stories.listFriendFeed(req.user.id),
-    ]);
-    const list = summary.hasStory
-      ? await stories.listActiveByUser(req.user.id, {
-          viewerUserId: req.user.id,
-        })
-      : [];
+    const data = await storyFeedCache.getOrSet(
+      storyFeedKey(req.user.id),
+      async () => {
+        const profile = await users.getProfile(req.user.id);
+        const [summary, friends] = await Promise.all([
+          stories.getFeedSummaryForUser(req.user.id, req.user.id),
+          stories.listFriendFeed(req.user.id),
+        ]);
+        const list = summary.hasStory
+          ? await stories.listActiveByUser(req.user.id, {
+              viewerUserId: req.user.id,
+            })
+          : [];
+
+        return {
+          me: {
+            userId: req.user.id,
+            name: profile?.fullName || 'You',
+            avatarUrl: profile?.avatarUrl || '',
+            hasStory: summary.hasStory,
+            isViewed: summary.isViewed,
+            storyCount: summary.storyCount,
+          },
+          stories: list.map((s) => s.toJSON()),
+          friends: friends.map((group) => ({
+            userId: group.userId,
+            name: group.name,
+            username: group.username,
+            avatarUrl: group.avatarUrl,
+            hasStory: group.hasStory,
+            isViewed: group.isViewed,
+            storyCount: group.storyCount,
+            stories: group.stories.map((s) => s.toJSON()),
+          })),
+        };
+      },
+    );
 
     return res.json({
       success: true,
-      data: {
-        me: {
-          userId: req.user.id,
-          name: profile?.fullName || 'You',
-          avatarUrl: profile?.avatarUrl || '',
-          hasStory: summary.hasStory,
-          isViewed: summary.isViewed,
-          storyCount: summary.storyCount,
-        },
-        stories: list.map((s) => s.toJSON()),
-        friends: friends.map((group) => ({
-          userId: group.userId,
-          name: group.name,
-          username: group.username,
-          avatarUrl: group.avatarUrl,
-          hasStory: group.hasStory,
-          isViewed: group.isViewed,
-          storyCount: group.storyCount,
-          stories: group.stories.map((s) => s.toJSON()),
-        })),
-      },
+      data,
     });
   } catch (err) {
     return next(err);
@@ -292,6 +302,7 @@ router.post('/:id/view', requireFirebaseAuth, async (req, res, next) => {
     if (!existing) return undefined;
 
     const updated = await stories.markViewed(id, req.user.id);
+    storyFeedCache.delete(storyFeedKey(req.user.id));
     return res.json({
       success: true,
       data: { story: updated ? updated.toJSON() : existing.toJSON() },

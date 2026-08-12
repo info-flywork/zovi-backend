@@ -3,6 +3,12 @@
 const express = require('express');
 const { requireFirebaseAuth } = require('../middleware/auth');
 const { CheckInService } = require('../services/CheckInService');
+const {
+  friendshipStreaksCache,
+  friendshipStreaksKey,
+  invalidateMapNearby,
+  invalidateUser,
+} = require('../cache/appCache');
 
 const router = express.Router();
 const checkIns = new CheckInService();
@@ -13,9 +19,11 @@ const checkIns = new CheckInService();
  */
 router.get('/streaks', requireFirebaseAuth, async (req, res, next) => {
   try {
-    const items = await checkIns.listFriendshipStreaks(req.user.id, {
-      limit: Number(req.query.limit) || 50,
-    });
+    const limit = Number(req.query.limit) || 50;
+    const items = await friendshipStreaksCache.getOrSet(
+      `${friendshipStreaksKey(req.user.id)}:${limit}`,
+      () => checkIns.listFriendshipStreaks(req.user.id, { limit }),
+    );
     return res.json({ success: true, data: { items } });
   } catch (err) {
     return next(err);
@@ -111,6 +119,10 @@ router.post('/', requireFirebaseAuth, async (req, res, next) => {
       photoUrls: Array.isArray(req.body?.photoUrls) ? req.body.photoUrls : [],
       category: req.body?.category,
     });
+
+    invalidateMapNearby();
+    invalidateUser(req.user.id);
+    friendshipStreaksCache.clear();
 
     return res.status(201).json({ success: true, data: result });
   } catch (err) {
