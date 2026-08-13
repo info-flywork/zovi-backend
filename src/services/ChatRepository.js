@@ -135,7 +135,21 @@ class ChatRepository {
            COALESCE(up.avatar_url, '')
          ) AS peerAvatarUrl,
          IF(dp.conversation_id IS NULL, 1, 0) AS isGroup,
-         COALESCE(t.id, '') AS tribeId
+         COALESCE(t.id, '') AS tribeId,
+         IF(
+           dp.conversation_id IS NULL,
+           COALESCE(
+             NULLIF(t.member_count_cache, 0),
+             (
+               SELECT COUNT(*)
+               FROM tribe_members tm_count
+               WHERE tm_count.tribe_id = t.id
+                 AND tm_count.state = 'member'
+             ),
+             0
+           ),
+           0
+         ) AS memberCount
        FROM conversation_members m
        INNER JOIN conversations c ON c.id = m.conversation_id
        LEFT JOIN dm_pairs dp ON dp.conversation_id = c.id
@@ -194,7 +208,21 @@ class ChatRepository {
            COALESCE(up.avatar_url, '')
          ) AS peerAvatarUrl,
          IF(dp.conversation_id IS NULL, 1, 0) AS isGroup,
-         COALESCE(t.id, '') AS tribeId
+         COALESCE(t.id, '') AS tribeId,
+         IF(
+           dp.conversation_id IS NULL,
+           COALESCE(
+             NULLIF(t.member_count_cache, 0),
+             (
+               SELECT COUNT(*)
+               FROM tribe_members tm_count
+               WHERE tm_count.tribe_id = t.id
+                 AND tm_count.state = 'member'
+             ),
+             0
+           ),
+           0
+         ) AS memberCount
        FROM conversation_members m
        INNER JOIN conversations c ON c.id = m.conversation_id
        LEFT JOIN dm_pairs dp ON dp.conversation_id = c.id
@@ -507,6 +535,7 @@ class ChatRepository {
         avatarUrl: row.peerAvatarUrl || '',
         isGroup: Boolean(row.isGroup),
         tribeId: row.tribeId || '',
+        memberCount: Number(row.memberCount || 0),
       },
     };
   }
@@ -523,7 +552,7 @@ class ChatRepository {
       replyToMessageId: row.replyToMessageId || null,
       replyPreview: row.replyPreview || '',
       createdAt: row.createdAt,
-      senderName: row.senderName || '',
+      senderName: row.senderName || row.senderUsername || '',
       senderUsername: row.senderUsername || '',
       senderAvatarUrl: row.senderAvatarUrl || '',
     };
