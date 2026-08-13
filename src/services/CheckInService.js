@@ -47,7 +47,18 @@ class CheckInService {
       `SELECT * FROM venues WHERE place_key = ? LIMIT 1`,
       [key],
     );
-    if (existing[0]) return existing[0];
+    if (existing[0]) {
+      const newCat = normalizeCheckInCategory(category) || 'other';
+      const prevCat = String(existing[0].category || 'other').trim().toLowerCase();
+      if (prevCat === 'other' && newCat !== 'other') {
+        await query(`UPDATE venues SET category = ? WHERE id = ?`, [
+          newCat,
+          existing[0].id,
+        ]);
+        existing[0].category = newCat;
+      }
+      return existing[0];
+    }
 
     const id = randomUUID();
     const safeCategory = normalizeCheckInCategory(category) || 'other';

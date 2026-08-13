@@ -141,6 +141,7 @@ class NotificationRepository {
     bodyKey,
     thumbnailUrl = null,
     payload = null,
+    action = 'open_story',
   }) {
     await query(
       `UPDATE notifications
@@ -149,7 +150,7 @@ class NotificationRepository {
            body_key = ?,
            thumbnail_url = COALESCE(?, thumbnail_url),
            payload_json = ?,
-           action = 'open_story',
+           action = ?,
            created_at = UTC_TIMESTAMP(3),
            read_at = NULL
        WHERE id = ? AND deleted_at IS NULL`,
@@ -159,6 +160,7 @@ class NotificationRepository {
         bodyKey,
         thumbnailUrl,
         payload ? JSON.stringify(payload) : null,
+        action,
         id,
       ],
     );

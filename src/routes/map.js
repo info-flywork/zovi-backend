@@ -139,11 +139,19 @@ router.get('/places/nearby', requireFirebaseAuth, async (req, res, next) => {
     );
     const limit = Math.min(Math.max(Number(req.query.limit) || 40, 1), 40);
     const key = placesNearbyKey({ lat, lng, radiusMeters, limit });
-    const cacheHit = placesNearbyCache.get(key) !== undefined;
+    const cached = placesNearbyCache.get(key);
+    // Empty arrays from a failed Places call must not stick for the 15m TTL.
+    if (Array.isArray(cached) && cached.length === 0) {
+      placesNearbyCache.delete(key);
+    }
 
-    const items = await placesNearbyCache.getOrSet(key, async () =>
-      places.searchNearby({ lat, lng, radiusMeters, limit }),
-    );
+    const cacheHit = Array.isArray(cached) && cached.length > 0;
+    const items = cacheHit
+      ? cached
+      : await places.searchNearby({ lat, lng, radiusMeters, limit });
+    if (!cacheHit && items.length > 0) {
+      placesNearbyCache.set(key, items);
+    }
     logger.info('places_nearby_ok', {
       userId: req.user?.id || null,
       lat,

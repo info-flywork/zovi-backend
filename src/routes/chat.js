@@ -193,6 +193,28 @@ router.get(
 );
 
 /**
+ * GET /chat/conversations/:id/media — gallery images/stamps for a thread
+ */
+router.get(
+  '/conversations/:id/media',
+  requireFirebaseAuth,
+  async (req, res, next) => {
+    try {
+      const limit = Number(req.query.limit) || 100;
+      const offset = Number(req.query.offset) || 0;
+      const media = await chatService.listMedia(
+        req.user.id,
+        req.params.id,
+        { limit, offset },
+      );
+      return res.json({ success: true, data: { media } });
+    } catch (err) {
+      return handleServiceError(err, res, next);
+    }
+  },
+);
+
+/**
  * POST /chat/conversations/:id/accept — move request → inbox for me
  */
 router.post(

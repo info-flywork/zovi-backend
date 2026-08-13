@@ -3,20 +3,22 @@
 const { ChatRepository } = require('./ChatRepository');
 const { FollowRepository } = require('./FollowRepository');
 const { UserRepository } = require('./UserRepository');
-const { OneSignalService } = require('./OneSignalService');
-const { logger } = require('../utils/logger');
+const { TribeRepository } = require('./TribeRepository');
+const { NotificationService } = require('./NotificationService');
 
 class ChatService {
   constructor({
     chat = new ChatRepository(),
     follows = new FollowRepository(),
     users = new UserRepository(),
-    oneSignal = new OneSignalService(),
+    tribes = new TribeRepository(),
+    notifications = new NotificationService(),
   } = {}) {
     this.chat = chat;
     this.follows = follows;
     this.users = users;
-    this.oneSignal = oneSignal;
+    this.tribes = tribes;
+    this.notifications = notifications;
   }
 
   _httpError(status, code, message) {
@@ -89,6 +91,20 @@ class ChatService {
     return rows.reverse().map((r) => this.chat.mapMessageRow(r));
   }
 
+  async listMedia(viewerId, conversationId, opts) {
+    const id = String(conversationId || '').trim();
+    if (!(await this.chat.isMember(id, viewerId))) {
+      throw this._httpError(404, 'NOT_FOUND', 'Conversation not found');
+    }
+    const rows = await this.chat.listConversationMedia(id, opts);
+    return rows.map((r) => ({
+      id: r.id,
+      type: r.type,
+      mediaUrl: r.mediaUrl || '',
+      createdAt: r.createdAt,
+    }));
+  }
+
   async acceptConversation(viewerId, conversationId) {
     const id = String(conversationId || '').trim();
     if (!(await this.chat.isMember(id, viewerId))) {
@@ -131,8 +147,9 @@ class ChatService {
       throw this._httpError(404, 'NOT_FOUND', 'Conversation not found');
     }
 
-    const peerId = await this.chat.getPeerUserId(id, viewerId);
-    if (!peerId) {
+    const isDm = await this.chat.isDmConversation(id);
+    const others = await this.chat.listOtherMemberIds(id, viewerId);
+    if (isDm && others.length === 0) {
       throw this._httpError(404, 'NOT_FOUND', 'Conversation not found');
     }
 
@@ -151,7 +168,11 @@ class ChatService {
       throw this._httpError(400, 'EMPTY_MESSAGE', 'Media required');
     }
 
-    await this._applySendFolders(id, viewerId, peerId);
+    if (isDm && others[0]) {
+      await this._applySendFolders(id, viewerId, others[0]);
+    } else {
+      await this.chat.promoteToInbox(id, viewerId);
+    }
 
     const row = await this.chat.insertMessage({
       conversationId: id,
@@ -164,69 +185,54 @@ class ChatService {
     });
 
     const mapped = this.chat.mapMessageRow(row);
+    const preview =
+      safeType === 'text'
+        ? text.slice(0, 120)
+        : safeType === 'image'
+          ? 'Fotoğraf'
+          : safeType === 'voice'
+            ? 'Sesli mesaj'
+            : 'Sticker';
+    const mediaThumb =
+      safeType === 'image' && media ? media : null;
 
-    // Fire-and-forget push to the peer.
-    const recipientRow = await this.chat.getConversationForViewer(id, peerId);
-    const isRequest = recipientRow?.folder === 'request';
-    this._pushNewMessage({
-      recipientId: peerId,
-      senderId: viewerId,
-      conversationId: id,
-      isRequest,
-      lastMessageAt: mapped?.createdAt || null,
-      preview:
-        safeType === 'text'
-          ? text.slice(0, 120)
-          : safeType === 'image'
-            ? 'Fotoğraf'
-            : safeType === 'voice'
-              ? 'Sesli mesaj'
-              : 'Sticker',
-    }).catch(() => {});
+    let isGroup = !isDm;
+    let groupName = '';
+    let tribeId = '';
+    if (isGroup) {
+      const tribe = await this.tribes.getByConversationId(id);
+      if (tribe) {
+        groupName = String(tribe.name || '').trim();
+        tribeId = String(tribe.id || '').trim();
+      }
+    }
+
+    for (const recipientId of others) {
+      let isRequest = false;
+      if (isDm) {
+        const recipientRow = await this.chat.getConversationForViewer(
+          id,
+          recipientId,
+        );
+        isRequest = recipientRow?.folder === 'request';
+      }
+      this.notifications
+        .notifyChatMessage({
+          recipientId,
+          senderId: viewerId,
+          conversationId: id,
+          preview,
+          isRequest,
+          isGroup,
+          groupName,
+          tribeId,
+          mediaThumbnailUrl: mediaThumb,
+          lastMessageAt: mapped?.createdAt || null,
+        })
+        .catch(() => {});
+    }
 
     return mapped;
-  }
-
-  async _pushNewMessage({
-    recipientId,
-    senderId,
-    conversationId,
-    preview,
-    isRequest = false,
-    lastMessageAt = null,
-  }) {
-    try {
-      const profile = await this.users.getProfile(senderId);
-      const name =
-        profile?.fullName?.trim() || profile?.username?.trim() || 'Birisi';
-      const heading = name;
-      const body = isRequest
-        ? `${name}: ${preview || 'Mesaj isteği'}`
-        : preview || 'Yeni mesaj';
-      await this.oneSignal.sendToUser({
-        userId: recipientId,
-        heading,
-        body,
-        data: {
-          type: isRequest ? 'chat_request' : 'chat_message',
-          action: 'open_chat',
-          conversationId,
-          actorId: senderId,
-          username: profile?.username || '',
-          displayName: name,
-          avatarUrl: profile?.avatarUrl || '',
-          folder: isRequest ? 'request' : 'inbox',
-          isRequest,
-          preview: preview || '',
-          lastMessageAt: lastMessageAt || '',
-          messageKey: isRequest
-            ? 'chat_message_request'
-            : 'chat_message_received',
-        },
-      });
-    } catch (err) {
-      logger.warn('chat_push_failed', { message: err.message });
-    }
   }
 
   async markRead(viewerId, conversationId) {

@@ -19,6 +19,10 @@ const chatRoutes = require('./routes/chat');
 const pulseRoutes = require('./routes/pulses');
 const mapRoutes = require('./routes/map');
 const checkInRoutes = require('./routes/checkIns');
+const tribeRoutes = require('./routes/tribes');
+const {
+  startTribeFormationSchedule,
+} = require('./services/tribeFormationSchedule');
 
 async function bootstrap() {
   initFirebase();
@@ -53,6 +57,7 @@ async function bootstrap() {
   app.use('/pulses', pulseRoutes);
   app.use('/map', mapRoutes);
   app.use('/check-ins', checkInRoutes);
+  app.use('/tribes', tribeRoutes);
 
   app.use(notFoundHandler);
   app.use(errorHandler);
@@ -65,6 +70,9 @@ async function bootstrap() {
       latencyMs: db.latencyMs,
     });
   });
+
+  // Nightly algorithmic tribe formation (in-process, dependency-free).
+  startTribeFormationSchedule();
 
   const shutdown = async (signal) => {
     logger.info('shutdown', { signal });

@@ -126,6 +126,10 @@ function invalidateMapNearby() {
   mapNearbyCache.clear();
 }
 
+function invalidatePlacesNearby() {
+  placesNearbyCache.clear();
+}
+
 function invalidateStampsCatalog() {
   stampsCatalogCache.clear();
 }
@@ -150,5 +154,6 @@ module.exports = {
   invalidateUsername,
   invalidateStoryFeeds,
   invalidateMapNearby,
+  invalidatePlacesNearby,
   invalidateStampsCatalog,
 };

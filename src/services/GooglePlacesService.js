@@ -147,6 +147,7 @@ class GooglePlacesService {
     const safeRadius = Math.min(Math.max(Number(radiusMeters) || 3000, 100), 50000);
     const safeLimit = Math.min(Math.max(Number(limit) || 40, 1), 40);
 
+    let failedBatches = 0;
     const batches = await Promise.all(
       TYPE_BATCHES.map((includedTypes) =>
         this._searchBatch({
@@ -156,6 +157,7 @@ class GooglePlacesService {
           includedTypes,
           maxResultCount: 20,
         }).catch((err) => {
+          failedBatches += 1;
           logger.warn('google_places_batch_failed', {
             message: err?.message,
             status: err?.response?.status,
@@ -167,6 +169,13 @@ class GooglePlacesService {
         }),
       ),
     );
+
+    if (failedBatches === TYPE_BATCHES.length) {
+      const err = new Error('Google Places upstream failed');
+      err.status = 502;
+      err.code = 'PLACES_UPSTREAM_FAILED';
+      throw err;
+    }
 
     const seen = new Set();
     const merged = [];

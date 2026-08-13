@@ -105,15 +105,45 @@ class ChatRepository {
          c.last_message_sender_id AS lastMessageSenderId,
          m.folder AS folder,
          m.unread_count AS unreadCount,
-         peer.user_id AS peerUserId,
-         up.full_name AS peerName,
-         up.username AS peerUsername,
-         up.avatar_url AS peerAvatarUrl
+         IF(dp.conversation_id IS NULL, '', COALESCE(peer.user_id, '')) AS peerUserId,
+         IF(
+           dp.conversation_id IS NULL,
+           COALESCE(t.name, ''),
+           COALESCE(up.full_name, up.username, '')
+         ) AS peerName,
+         IF(
+           dp.conversation_id IS NULL,
+           COALESCE(t.name, ''),
+           COALESCE(up.username, '')
+         ) AS peerUsername,
+         IF(
+           dp.conversation_id IS NULL,
+           COALESCE(
+             (
+               SELECT up2.avatar_url
+               FROM tribe_members tm
+               INNER JOIN user_profiles up2 ON up2.user_id = tm.user_id
+               WHERE tm.tribe_id = t.id
+                 AND tm.state = 'member'
+                 AND up2.avatar_url IS NOT NULL
+                 AND TRIM(up2.avatar_url) <> ''
+               ORDER BY tm.joined_at DESC, tm.created_at DESC
+               LIMIT 1
+             ),
+             ''
+           ),
+           COALESCE(up.avatar_url, '')
+         ) AS peerAvatarUrl,
+         IF(dp.conversation_id IS NULL, 1, 0) AS isGroup,
+         COALESCE(t.id, '') AS tribeId
        FROM conversation_members m
        INNER JOIN conversations c ON c.id = m.conversation_id
-       INNER JOIN conversation_members peer
+       LEFT JOIN dm_pairs dp ON dp.conversation_id = c.id
+       LEFT JOIN tribes t ON t.conversation_id = c.id
+       LEFT JOIN conversation_members peer
          ON peer.conversation_id = m.conversation_id
         AND peer.user_id <> m.user_id
+        AND dp.conversation_id IS NOT NULL
        LEFT JOIN user_profiles up ON up.user_id = peer.user_id
        WHERE m.user_id = ?
          AND m.folder = ?
@@ -134,15 +164,45 @@ class ChatRepository {
          c.last_message_sender_id AS lastMessageSenderId,
          m.folder AS folder,
          m.unread_count AS unreadCount,
-         peer.user_id AS peerUserId,
-         up.full_name AS peerName,
-         up.username AS peerUsername,
-         up.avatar_url AS peerAvatarUrl
+         IF(dp.conversation_id IS NULL, '', COALESCE(peer.user_id, '')) AS peerUserId,
+         IF(
+           dp.conversation_id IS NULL,
+           COALESCE(t.name, ''),
+           COALESCE(up.full_name, up.username, '')
+         ) AS peerName,
+         IF(
+           dp.conversation_id IS NULL,
+           COALESCE(t.name, ''),
+           COALESCE(up.username, '')
+         ) AS peerUsername,
+         IF(
+           dp.conversation_id IS NULL,
+           COALESCE(
+             (
+               SELECT up2.avatar_url
+               FROM tribe_members tm
+               INNER JOIN user_profiles up2 ON up2.user_id = tm.user_id
+               WHERE tm.tribe_id = t.id
+                 AND tm.state = 'member'
+                 AND up2.avatar_url IS NOT NULL
+                 AND TRIM(up2.avatar_url) <> ''
+               ORDER BY tm.joined_at DESC, tm.created_at DESC
+               LIMIT 1
+             ),
+             ''
+           ),
+           COALESCE(up.avatar_url, '')
+         ) AS peerAvatarUrl,
+         IF(dp.conversation_id IS NULL, 1, 0) AS isGroup,
+         COALESCE(t.id, '') AS tribeId
        FROM conversation_members m
        INNER JOIN conversations c ON c.id = m.conversation_id
-       INNER JOIN conversation_members peer
+       LEFT JOIN dm_pairs dp ON dp.conversation_id = c.id
+       LEFT JOIN tribes t ON t.conversation_id = c.id
+       LEFT JOIN conversation_members peer
          ON peer.conversation_id = m.conversation_id
         AND peer.user_id <> m.user_id
+        AND dp.conversation_id IS NOT NULL
        LEFT JOIN user_profiles up ON up.user_id = peer.user_id
        WHERE m.conversation_id = ?
          AND m.user_id = ?
@@ -247,13 +307,17 @@ class ChatRepository {
   async findMessageById(id) {
     const rows = await query(
       `SELECT
-         id, conversation_id AS conversationId, sender_id AS senderId,
-         type, body, media_url AS mediaUrl,
-         reply_to_message_id AS replyToMessageId,
-         reply_preview AS replyPreview,
-         created_at AS createdAt
-       FROM messages
-       WHERE id = ? AND deleted_at IS NULL
+         m.id, m.conversation_id AS conversationId, m.sender_id AS senderId,
+         m.type, m.body, m.media_url AS mediaUrl,
+         m.reply_to_message_id AS replyToMessageId,
+         m.reply_preview AS replyPreview,
+         m.created_at AS createdAt,
+         up.full_name AS senderName,
+         up.username AS senderUsername,
+         up.avatar_url AS senderAvatarUrl
+       FROM messages m
+       LEFT JOIN user_profiles up ON up.user_id = m.sender_id
+       WHERE m.id = ? AND m.deleted_at IS NULL
        LIMIT 1`,
       [id],
     );
@@ -299,19 +363,23 @@ class ChatRepository {
   ) {
     const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
     const select = `SELECT
-         id, conversation_id AS conversationId, sender_id AS senderId,
-         type, body, media_url AS mediaUrl,
-         reply_to_message_id AS replyToMessageId,
-         reply_preview AS replyPreview,
-         created_at AS createdAt
-       FROM messages`;
+         m.id, m.conversation_id AS conversationId, m.sender_id AS senderId,
+         m.type, m.body, m.media_url AS mediaUrl,
+         m.reply_to_message_id AS replyToMessageId,
+         m.reply_preview AS replyPreview,
+         m.created_at AS createdAt,
+         up.full_name AS senderName,
+         up.username AS senderUsername,
+         up.avatar_url AS senderAvatarUrl
+       FROM messages m
+       LEFT JOIN user_profiles up ON up.user_id = m.sender_id`;
     if (after) {
       return query(
         `${select}
-         WHERE conversation_id = ?
-           AND deleted_at IS NULL
-           AND created_at > ?
-         ORDER BY created_at ASC
+         WHERE m.conversation_id = ?
+           AND m.deleted_at IS NULL
+           AND m.created_at > ?
+         ORDER BY m.created_at ASC
          LIMIT ?`,
         [conversationId, after, safeLimit],
       );
@@ -319,22 +387,65 @@ class ChatRepository {
     if (before) {
       return query(
         `${select}
-         WHERE conversation_id = ?
-           AND deleted_at IS NULL
-           AND created_at < ?
-         ORDER BY created_at DESC
+         WHERE m.conversation_id = ?
+           AND m.deleted_at IS NULL
+           AND m.created_at < ?
+         ORDER BY m.created_at DESC
          LIMIT ?`,
         [conversationId, before, safeLimit],
       );
     }
     return query(
       `${select}
-       WHERE conversation_id = ?
-         AND deleted_at IS NULL
-       ORDER BY created_at DESC
+       WHERE m.conversation_id = ?
+         AND m.deleted_at IS NULL
+       ORDER BY m.created_at DESC
        LIMIT ?`,
       [conversationId, safeLimit],
     );
+  }
+
+  async listOtherMemberIds(conversationId, userId) {
+    const rows = await query(
+      `SELECT user_id AS userId FROM conversation_members
+       WHERE conversation_id = ? AND user_id <> ? AND deleted_at IS NULL`,
+      [conversationId, userId],
+    );
+    return rows.map((r) => String(r.userId));
+  }
+
+  async listConversationMedia(
+    conversationId,
+    { limit = 100, offset = 0 } = {},
+  ) {
+    const safeLimit = Math.min(Math.max(Number(limit) || 100, 1), 200);
+    const safeOffset = Math.max(Number(offset) || 0, 0);
+    const rows = await query(
+      `SELECT m.id, m.type, m.media_url AS mediaUrl, m.created_at AS createdAt
+       FROM messages m
+       WHERE m.conversation_id = ?
+         AND m.deleted_at IS NULL
+         AND m.media_url IS NOT NULL
+         AND TRIM(m.media_url) <> ''
+         AND m.type IN ('image', 'stamp')
+       ORDER BY m.created_at DESC
+       LIMIT ? OFFSET ?`,
+      [conversationId, safeLimit, safeOffset],
+    );
+    return rows.map((r) => ({
+      id: String(r.id),
+      type: String(r.type || 'image'),
+      mediaUrl: String(r.mediaUrl || '').trim(),
+      createdAt: r.createdAt,
+    }));
+  }
+
+  async isDmConversation(conversationId) {
+    const rows = await query(
+      `SELECT 1 FROM dm_pairs WHERE conversation_id = ? LIMIT 1`,
+      [conversationId],
+    );
+    return Boolean(rows[0]);
   }
 
   async markRead(conversationId, userId) {
@@ -394,6 +505,8 @@ class ChatRepository {
         name: row.peerName || '',
         username: row.peerUsername || '',
         avatarUrl: row.peerAvatarUrl || '',
+        isGroup: Boolean(row.isGroup),
+        tribeId: row.tribeId || '',
       },
     };
   }
@@ -410,6 +523,9 @@ class ChatRepository {
       replyToMessageId: row.replyToMessageId || null,
       replyPreview: row.replyPreview || '',
       createdAt: row.createdAt,
+      senderName: row.senderName || '',
+      senderUsername: row.senderUsername || '',
+      senderAvatarUrl: row.senderAvatarUrl || '',
     };
   }
 }

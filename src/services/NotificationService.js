@@ -41,6 +41,35 @@ const PUSH_COPY = {
     },
     messageKey: 'notifications_liked_story',
   },
+  chat_message: {
+    heading: (name, ctx = {}) => {
+      if (ctx.isGroup && ctx.groupName) return ctx.groupName;
+      return name;
+    },
+    body: (name, ctx = {}) => {
+      const count = Number(ctx.aggCount || 0);
+      if (count >= 2) {
+        return ctx.isGroup && ctx.groupName
+          ? `${count} yeni mesaj`
+          : `${count} yeni mesaj`;
+      }
+      const preview = String(ctx.preview || '').trim();
+      if (preview) return preview;
+      return `${name} mesaj gönderdi`;
+    },
+    messageKey: 'chat_message_received',
+  },
+  chat_request: {
+    heading: (name) => name,
+    body: (name, ctx = {}) => {
+      const count = Number(ctx.aggCount || 0);
+      if (count >= 2) return `${count} mesaj isteği`;
+      const preview = String(ctx.preview || '').trim();
+      if (preview) return preview;
+      return `${name} mesaj isteği gönderdi`;
+    },
+    messageKey: 'chat_message_request',
+  },
 };
 
 class NotificationService {
@@ -165,6 +194,7 @@ class NotificationService {
         aggCount: nextCount,
         bodyKey,
         thumbnailUrl: thumb || recent.thumbnail_url || null,
+        action: 'open_story',
         payload: {
           actorName,
           actorUsername: actor?.username || '',
@@ -217,6 +247,209 @@ class NotificationService {
       aggCount: 1,
     });
     return mapped;
+  }
+
+  async notifyChatMessage({
+    recipientId,
+    senderId,
+    conversationId,
+    preview = '',
+    isRequest = false,
+    isGroup = false,
+    groupName = '',
+    tribeId = '',
+    mediaThumbnailUrl = '',
+    lastMessageAt = null,
+  }) {
+    if (!recipientId || !senderId || recipientId === senderId) return null;
+    const convId = String(conversationId || '').trim();
+    if (!convId) return null;
+
+    const settings = await this.users.ensureSettings(recipientId);
+    if (!settings?.pushEnabled || !settings?.chatNotifications) return null;
+
+    const type = isRequest ? 'chat_request' : 'chat_message';
+    const windowSec = 60;
+    const thumb = String(mediaThumbnailUrl || '').trim() || null;
+    const previewText = String(preview || '').trim();
+    const groupLabel = String(groupName || '').trim();
+    const tribe = String(tribeId || '').trim();
+
+    const recent = await this.notifications.findRecentForObject({
+      recipientId,
+      type,
+      objectType: 'conversation',
+      objectId: convId,
+      withinSeconds: windowSec,
+    });
+
+    const actor = await this.users.getProfile(senderId);
+    const actorName =
+      actor?.fullName?.trim() ||
+      actor?.username?.trim() ||
+      'Birisi';
+    const batchBodyKey = 'notifications_chat_messages_batch';
+    const singleBodyKey = isRequest
+      ? 'chat_message_request'
+      : 'chat_message_received';
+
+    const basePayload = {
+      actorName,
+      actorUsername: actor?.username || '',
+      preview: previewText,
+      aggCount: 1,
+      isRequest,
+      isGroup,
+      groupName: groupLabel,
+      tribeId: tribe,
+      conversationId: convId,
+      lastMessageAt: lastMessageAt || '',
+      thumbnailUrl: thumb || '',
+    };
+
+    if (recent) {
+      const prev = Number(recent.agg_count) > 0 ? Number(recent.agg_count) : 1;
+      const nextCount = prev + 1;
+      const bodyKey = nextCount >= 2 ? batchBodyKey : singleBodyKey;
+      const payload = { ...basePayload, aggCount: nextCount };
+
+      const row = await this.notifications.bumpAggregate({
+        id: recent.id,
+        actorId: senderId,
+        aggCount: nextCount,
+        bodyKey,
+        thumbnailUrl: thumb || recent.thumbnail_url || null,
+        action: 'open_chat',
+        payload,
+      });
+
+      const mapped = this.notifications.mapRow(row);
+      this._pushChatMessage({
+        recipientId,
+        senderId,
+        actor,
+        actorName,
+        mapped,
+        conversationId: convId,
+        preview: previewText,
+        isRequest,
+        isGroup,
+        groupName: groupLabel,
+        tribeId: tribe,
+        mediaThumbnailUrl: thumb || mapped?.thumbnailUrl || '',
+        aggCount: nextCount,
+        lastMessageAt,
+      });
+      return mapped;
+    }
+
+    const row = await this.notifications.create({
+      recipientId,
+      actorId: senderId,
+      type,
+      objectType: 'conversation',
+      objectId: convId,
+      action: 'open_chat',
+      bodyKey: singleBodyKey,
+      thumbnailUrl: thumb,
+      aggCount: 1,
+      payload: basePayload,
+    });
+
+    const mapped = this.notifications.mapRow(row);
+    this._pushChatMessage({
+      recipientId,
+      senderId,
+      actor,
+      actorName,
+      mapped,
+      conversationId: convId,
+      preview: previewText,
+      isRequest,
+      isGroup,
+      groupName: groupLabel,
+      tribeId: tribe,
+      mediaThumbnailUrl: thumb || '',
+      aggCount: 1,
+      lastMessageAt,
+    });
+    return mapped;
+  }
+
+  _pushChatMessage({
+    recipientId,
+    senderId,
+    actor,
+    actorName,
+    mapped,
+    conversationId,
+    preview,
+    isRequest,
+    isGroup,
+    groupName,
+    tribeId,
+    mediaThumbnailUrl,
+    aggCount,
+    lastMessageAt,
+  }) {
+    const type = isRequest ? 'chat_request' : 'chat_message';
+    const copy = PUSH_COPY[type];
+    const ctx = {
+      aggCount,
+      preview,
+      isGroup,
+      groupName,
+    };
+    const messageKey =
+      aggCount >= 2
+        ? 'notifications_chat_messages_batch'
+        : copy.messageKey;
+    const heading =
+      typeof copy.heading === 'function'
+        ? copy.heading(actorName, ctx)
+        : copy.heading;
+    const body =
+      typeof copy.body === 'function'
+        ? copy.body(actorName, ctx)
+        : copy.body;
+
+    this.oneSignal
+      .sendToUser({
+        userId: recipientId,
+        heading,
+        body,
+        collapseId: `chat_${conversationId}`,
+        data: {
+          type,
+          notificationId: mapped.id,
+          actorId: senderId || '',
+          objectId: conversationId || '',
+          conversationId,
+          action: 'open_chat',
+          messageKey,
+          username: aggCount >= 2 ? '' : actor?.username || '',
+          displayName:
+            aggCount >= 2 && isGroup && groupName
+              ? groupName
+              : actorName,
+          avatarUrl: actor?.avatarUrl || '',
+          thumbnailUrl: mediaThumbnailUrl || '',
+          preview: preview || '',
+          folder: isRequest ? 'request' : 'inbox',
+          isRequest,
+          isGroup,
+          groupName: groupName || '',
+          tribeId: tribeId || '',
+          lastMessageAt: lastMessageAt || '',
+          aggCount: String(aggCount),
+        },
+      })
+      .catch((err) => {
+        logger.error('notify_push_failed', {
+          err: err.message,
+          type,
+        });
+      });
   }
 
   _pushStoryLike({
