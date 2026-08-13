@@ -38,6 +38,19 @@ class AuthService {
     return 'create_profile';
   }
 
+  async _findExistingIdentity(phoneE164, email) {
+    if (phoneE164) {
+      const byPhone = await this.users.findByPhoneE164(phoneE164, {
+        includeDeleted: true,
+      });
+      if (byPhone) return byPhone;
+    }
+    if (email) {
+      return this.users.findByEmail(email, { includeDeleted: true });
+    }
+    return null;
+  }
+
   async syncFromFirebase(decoded) {
     const firebaseUid = decoded.uid;
     const email = decoded.email || null;
@@ -45,28 +58,63 @@ class AuthService {
     const primaryAuth = this.resolvePrimaryAuth(decoded);
     const emailVerifiedAt = decoded.email_verified ? new Date() : null;
     const phoneVerifiedAt = phoneE164 ? new Date() : null;
+    const identity = {
+      firebaseUid,
+      phoneE164,
+      email,
+      primaryAuth,
+      phoneVerifiedAt,
+      emailVerifiedAt,
+    };
 
-    let user = await this.users.findByFirebaseUid(firebaseUid);
+    let user = await this.users.findByFirebaseUid(firebaseUid, {
+      includeDeleted: true,
+    });
     let created = false;
 
-    if (!user) {
-      user = await this.users.create({
-        firebaseUid,
-        phoneE164,
-        email,
-        primaryAuth,
-        phoneVerifiedAt,
-        emailVerifiedAt,
-      });
-      created = true;
-      logger.info('user_created', {
-        userId: user.id,
-        firebaseUid,
-        primaryAuth,
-      });
+    if (user) {
+      const wasDeleted = Boolean(user.deletedAt);
+      const needsIdentityUpdate =
+        wasDeleted || (!user.phoneE164 && phoneE164) || (!user.email && email);
+      if (needsIdentityUpdate) {
+        user = await this.users.relinkFirebaseIdentity(user.id, identity);
+        logger.info(wasDeleted ? 'user_restored' : 'user_identity_updated', {
+          userId: user.id,
+          firebaseUid,
+        });
+      } else {
+        await this.users.touchLogin(user.id);
+        logger.info('user_login', { userId: user.id, firebaseUid });
+      }
     } else {
-      await this.users.touchLogin(user.id);
-      logger.info('user_login', { userId: user.id, firebaseUid });
+      const existing = await this._findExistingIdentity(phoneE164, email);
+      if (existing) {
+        user = await this.users.relinkFirebaseIdentity(existing.id, identity);
+        logger.info('user_relinked', {
+          userId: user.id,
+          firebaseUid,
+          primaryAuth,
+        });
+      } else {
+        try {
+          user = await this.users.create(identity);
+          created = true;
+          logger.info('user_created', {
+            userId: user.id,
+            firebaseUid,
+            primaryAuth,
+          });
+        } catch (err) {
+          if (!this.users.isDuplicateKey(err)) throw err;
+          const raced = await this._findExistingIdentity(phoneE164, email);
+          if (!raced) throw err;
+          user = await this.users.relinkFirebaseIdentity(raced.id, identity);
+          logger.info('user_relinked_after_duplicate', {
+            userId: user.id,
+            firebaseUid,
+          });
+        }
+      }
     }
 
     const profile = await this.users.ensureProfile(user.id);

@@ -12,10 +12,31 @@ const {
 } = require('../models');
 
 class UserRepository {
-  async findByFirebaseUid(firebaseUid) {
+  async findByFirebaseUid(firebaseUid, { includeDeleted = false } = {}) {
+    const deletedClause = includeDeleted ? '' : ' AND deleted_at IS NULL';
     const rows = await query(
-      'SELECT * FROM users WHERE firebase_uid = ? AND deleted_at IS NULL LIMIT 1',
+      `SELECT * FROM users WHERE firebase_uid = ?${deletedClause} LIMIT 1`,
       [firebaseUid],
+    );
+    return User.fromRow(rows[0]);
+  }
+
+  async findByPhoneE164(phoneE164, { includeDeleted = false } = {}) {
+    if (!phoneE164) return null;
+    const deletedClause = includeDeleted ? '' : ' AND deleted_at IS NULL';
+    const rows = await query(
+      `SELECT * FROM users WHERE phone_e164 = ?${deletedClause} LIMIT 1`,
+      [phoneE164],
+    );
+    return User.fromRow(rows[0]);
+  }
+
+  async findByEmail(email, { includeDeleted = false } = {}) {
+    if (!email) return null;
+    const deletedClause = includeDeleted ? '' : ' AND deleted_at IS NULL';
+    const rows = await query(
+      `SELECT * FROM users WHERE email = ?${deletedClause} LIMIT 1`,
+      [email],
     );
     return User.fromRow(rows[0]);
   }
@@ -26,6 +47,58 @@ class UserRepository {
       [id],
     );
     return User.fromRow(rows[0]);
+  }
+
+  isDuplicateKey(err) {
+    return err?.code === 'ER_DUP_ENTRY' || err?.errno === 1062;
+  }
+
+  /**
+   * Same person, new Firebase UID (or restored account): keep MySQL user id.
+   */
+  async relinkFirebaseIdentity(
+    userId,
+    {
+      firebaseUid,
+      phoneE164,
+      email,
+      primaryAuth,
+      phoneVerifiedAt,
+      emailVerifiedAt,
+    },
+  ) {
+    await query(
+      `UPDATE users
+       SET firebase_uid = CONCAT('deleted:', id)
+       WHERE firebase_uid = ?
+         AND id <> ?
+         AND deleted_at IS NOT NULL`,
+      [firebaseUid, userId],
+    );
+
+    await query(
+      `UPDATE users SET
+         firebase_uid = ?,
+         phone_e164 = COALESCE(?, phone_e164),
+         email = COALESCE(?, email),
+         primary_auth = COALESCE(?, primary_auth),
+         phone_verified_at = COALESCE(?, phone_verified_at),
+         email_verified_at = COALESCE(?, email_verified_at),
+         status = 'active',
+         deleted_at = NULL,
+         last_login_at = UTC_TIMESTAMP(3)
+       WHERE id = ?`,
+      [
+        firebaseUid,
+        phoneE164 || null,
+        email || null,
+        primaryAuth || null,
+        phoneVerifiedAt || null,
+        emailVerifiedAt || null,
+        userId,
+      ],
+    );
+    return this.findById(userId);
   }
 
   async create({
