@@ -520,6 +520,65 @@ class UserRepository {
   }
 
   /**
+   * Friends (accounts the viewer follows) with a visible plan today,
+   * grouped by place name for "X friends are joining".
+   */
+  async listFriendJoiningByPlace(userId, { from, to } = {}) {
+    if (!userId || !from || !to) return [];
+    const rows = await query(
+      `SELECT
+         p.place_name AS place_name,
+         up.user_id AS user_id,
+         up.username AS username,
+         up.avatar_url AS avatar_url
+       FROM plans p
+       INNER JOIN follows f
+         ON f.follower_id = ?
+        AND f.following_id = p.user_id
+       INNER JOIN user_profiles up ON up.user_id = p.user_id
+       INNER JOIN users u ON u.id = p.user_id AND u.deleted_at IS NULL
+       WHERE p.status = 'scheduled'
+         AND p.show_to_friends = 1
+         AND p.user_id <> ?
+         AND p.scheduled_at >= ?
+         AND p.scheduled_at < ?
+         AND NOT EXISTS (
+           SELECT 1 FROM blocks b
+           WHERE (b.blocker_id = ? AND b.blocked_id = p.user_id)
+              OR (b.blocker_id = p.user_id AND b.blocked_id = ?)
+         )
+       ORDER BY p.scheduled_at ASC`,
+      [userId, userId, from, to, userId, userId],
+    );
+
+    const byPlace = new Map();
+    for (const row of rows) {
+      const placeName = String(row.place_name || '').trim();
+      if (!placeName) continue;
+      const key = placeName.toLowerCase().replace(/\s+/g, ' ');
+      let bucket = byPlace.get(key);
+      if (!bucket) {
+        bucket = { placeName, friendIds: new Set(), friends: [] };
+        byPlace.set(key, bucket);
+      }
+      if (bucket.friendIds.has(row.user_id)) continue;
+      bucket.friendIds.add(row.user_id);
+      if (bucket.friends.length >= 20) continue;
+      bucket.friends.push({
+        userId: row.user_id,
+        username: String(row.username || '').trim(),
+        avatarUrl: String(row.avatar_url || '').trim(),
+      });
+    }
+
+    return [...byPlace.values()].map((bucket) => ({
+      placeName: bucket.placeName,
+      friendsCount: bucket.friendIds.size,
+      friends: bucket.friends,
+    }));
+  }
+
+  /**
    * Plans visible to a viewer on someone else's profile.
    * Self → all scheduled. Viewer follows owner → show_to_friends. Else → none.
    */

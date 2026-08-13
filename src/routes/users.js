@@ -654,6 +654,26 @@ router.get('/me/plans', requireFirebaseAuth, async (req, res, next) => {
 });
 
 /**
+ * GET /users/me/plans/friends?from=<ISO>&to=<ISO>
+ * Takip edilen hesapların bugünkü planları — mekân bazında "arkadaşın katılıyor".
+ */
+router.get('/me/plans/friends', requireFirebaseAuth, async (req, res, next) => {
+  try {
+    const { from, to } = parsePlanDayRange(req);
+    const places = await authService.users.listFriendJoiningByPlace(req.user.id, {
+      from,
+      to,
+    });
+    return res.json({
+      success: true,
+      data: { places },
+    });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
  * POST /users/me/plans
  * Body: placeName, subtitle?, category?, scheduledAt, note?,
  *       showToFriends?, showToNearby?
