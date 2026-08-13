@@ -287,7 +287,6 @@ class StoryRepository {
        WHERE s.deleted_at IS NULL
          AND s.expires_at > UTC_TIMESTAMP(3)
          AND s.audience = 'public'
-         AND s.user_id <> ?
          AND NOT EXISTS (
            SELECT 1 FROM blocks b
            WHERE (b.blocker_id = ? AND b.blocked_id = s.user_id)
@@ -296,7 +295,6 @@ class StoryRepository {
        ORDER BY s.created_at DESC
        LIMIT ?`,
       [
-        viewerUserId,
         viewerUserId,
         viewerUserId,
         viewerUserId,

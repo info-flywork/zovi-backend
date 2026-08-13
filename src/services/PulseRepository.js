@@ -111,6 +111,37 @@ class PulseRepository {
     );
     return rows.map((r) => this.mapRow(r));
   }
+
+  async listPublicExplore(viewerUserId, { limit = 120 } = {}) {
+    const safeLimit = Math.min(Math.max(Number(limit) || 120, 1), 200);
+    const rows = await query(
+      `SELECT
+         p.*,
+         COALESCE(up.full_name, '') AS author_name,
+         COALESCE(up.username, '') AS author_username,
+         COALESCE(up.avatar_url, '') AS author_avatar_url
+       FROM pulses p
+       LEFT JOIN user_profiles up ON up.user_id = p.user_id
+       WHERE p.deleted_at IS NULL
+         AND (p.expires_at IS NULL OR p.expires_at > UTC_TIMESTAMP(3))
+         AND p.audience = 'public'
+         AND NOT EXISTS (
+           SELECT 1 FROM blocks b
+           WHERE (b.blocker_id = ? AND b.blocked_id = p.user_id)
+              OR (b.blocker_id = p.user_id AND b.blocked_id = ?)
+         )
+       ORDER BY p.created_at DESC
+       LIMIT ?`,
+      [viewerUserId, viewerUserId, safeLimit],
+    );
+
+    return rows.map((row) => ({
+      ...this.mapRow(row),
+      authorName: row.author_name || row.author_username || '',
+      authorUsername: row.author_username || '',
+      authorAvatarUrl: row.author_avatar_url || '',
+    }));
+  }
 }
 
 module.exports = { PulseRepository };

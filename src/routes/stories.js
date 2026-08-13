@@ -21,10 +21,11 @@ const notifications = new NotificationService();
 
 const storyUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 12 * 1024 * 1024 },
+  limits: { fileSize: 50 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    if (!String(file.mimetype || '').startsWith('image/')) {
-      const err = new Error('Only image uploads are allowed');
+    const mime = String(file.mimetype || '').toLowerCase();
+    if (!mime.startsWith('image/') && !mime.startsWith('video/')) {
+      const err = new Error('Only image or video uploads are allowed');
       err.code = 'INVALID_FILE_TYPE';
       err.status = 400;
       return cb(err);
@@ -33,10 +34,29 @@ const storyUpload = multer({
   },
 });
 
-function extFromMime(mime) {
-  if (mime === 'image/jpeg' || mime === 'image/jpg') return 'jpg';
-  if (mime === 'image/webp') return 'webp';
+function extFromMime(mime, originalname = '') {
+  const m = String(mime || '').toLowerCase();
+  if (m === 'image/jpeg' || m === 'image/jpg') return 'jpg';
+  if (m === 'image/webp') return 'webp';
+  if (m === 'image/gif') return 'gif';
+  if (m === 'image/png') return 'png';
+  if (m === 'video/quicktime') return 'mov';
+  if (m === 'video/webm') return 'webm';
+  if (m.startsWith('video/')) return 'mp4';
+  const name = String(originalname || '').toLowerCase();
+  const ext = name.includes('.') ? name.split('.').pop() : '';
+  if (ext && /^[a-z0-9]{2,5}$/.test(ext)) return ext;
   return 'png';
+}
+
+function mediaTypeFromUpload(file, hinted) {
+  const mime = String(file?.mimetype || '').toLowerCase();
+  if (mime.startsWith('video/')) return 'video';
+  if (mime.startsWith('image/')) return 'image';
+  const name = String(file?.originalname || '').toLowerCase();
+  if (/\.(mp4|mov|m4v|webm|avi|mkv)$/.test(name)) return 'video';
+  if (String(hinted || '').toLowerCase() === 'video') return 'video';
+  return 'image';
 }
 
 /**
@@ -68,20 +88,21 @@ router.post(
         ? Number(req.body.musicClipDurationMs)
         : null;
 
+      const mediaType = mediaTypeFromUpload(req.file, req.body.mediaType);
       const storyId = randomUUID();
-      const ext = extFromMime(req.file.mimetype);
+      const ext = extFromMime(req.file.mimetype, req.file.originalname);
       const storageKey = `stories/${req.user.id}/${storyId}.${ext}`;
       const uploaded = await bunny.uploadBuffer(
         req.file.buffer,
         storageKey,
-        req.file.mimetype || 'image/png',
+        req.file.mimetype || (mediaType === 'video' ? 'video/mp4' : 'image/png'),
       );
 
       const story = await stories.create({
         userId: req.user.id,
         mediaUrl: uploaded.url,
         storageKey: uploaded.storageKey,
-        mediaType: 'image',
+        mediaType,
         audience,
         musicTrackId,
         musicClipStartMs: Number.isFinite(musicClipStartMs)
@@ -101,7 +122,7 @@ router.post(
           userId: req.user.id,
           mediaUrl: uploaded.url,
           storageKey: uploaded.storageKey,
-          mediaType: 'image',
+          mediaType,
           sourceType: 'story',
           sourceId: full.id,
           audience,
@@ -195,6 +216,12 @@ router.get('/explore', requireFirebaseAuth, async (req, res, next) => {
   try {
     const limit = req.query.limit ? Number(req.query.limit) : 120;
     const list = await stories.listPublicExplore(req.user.id, { limit });
+    let pulseList = [];
+    try {
+      pulseList = await pulses.listPublicExplore(req.user.id, { limit });
+    } catch (err) {
+      logger.warn('explore_pulses_failed', { message: err.message });
+    }
     return res.json({
       success: true,
       data: {
@@ -204,6 +231,7 @@ router.get('/explore', requireFirebaseAuth, async (req, res, next) => {
           authorUsername: item.authorUsername,
           authorAvatarUrl: item.authorAvatarUrl,
         })),
+        pulses: pulseList,
       },
     });
   } catch (err) {

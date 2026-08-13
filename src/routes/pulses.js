@@ -14,10 +14,11 @@ const pulses = new PulseRepository();
 
 const pulseUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 12 * 1024 * 1024 },
+  limits: { fileSize: 50 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    if (!String(file.mimetype || '').startsWith('image/')) {
-      const err = new Error('Only image uploads are allowed');
+    const mime = String(file.mimetype || '').toLowerCase();
+    if (!mime.startsWith('image/') && !mime.startsWith('video/')) {
+      const err = new Error('Only image or video uploads are allowed');
       err.code = 'INVALID_FILE_TYPE';
       err.status = 400;
       return cb(err);
@@ -26,10 +27,29 @@ const pulseUpload = multer({
   },
 });
 
-function extFromMime(mime) {
-  if (mime === 'image/jpeg' || mime === 'image/jpg') return 'jpg';
-  if (mime === 'image/webp') return 'webp';
+function extFromMime(mime, originalname = '') {
+  const m = String(mime || '').toLowerCase();
+  if (m === 'image/jpeg' || m === 'image/jpg') return 'jpg';
+  if (m === 'image/webp') return 'webp';
+  if (m === 'image/gif') return 'gif';
+  if (m === 'image/png') return 'png';
+  if (m === 'video/quicktime') return 'mov';
+  if (m === 'video/webm') return 'webm';
+  if (m.startsWith('video/')) return 'mp4';
+  const name = String(originalname || '').toLowerCase();
+  const ext = name.includes('.') ? name.split('.').pop() : '';
+  if (ext && /^[a-z0-9]{2,5}$/.test(ext)) return ext;
   return 'png';
+}
+
+function mediaTypeFromUpload(file, hinted) {
+  const mime = String(file?.mimetype || '').toLowerCase();
+  if (mime.startsWith('video/')) return 'video';
+  if (mime.startsWith('image/')) return 'image';
+  const name = String(file?.originalname || '').toLowerCase();
+  if (/\.(mp4|mov|m4v|webm|avi|mkv)$/.test(name)) return 'video';
+  if (String(hinted || '').toLowerCase() === 'video') return 'video';
+  return 'image';
 }
 
 /**
@@ -40,6 +60,20 @@ router.get('/me', requireFirebaseAuth, async (req, res, next) => {
     const limit = Number(req.query.limit) || 60;
     const offset = Number(req.query.offset) || 0;
     const items = await pulses.listForUser(req.user.id, { limit, offset });
+    return res.json({ success: true, data: { pulses: items } });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /pulses/explore
+ * Public discovery grid: all active public pulses except the viewer's own.
+ */
+router.get('/explore', requireFirebaseAuth, async (req, res, next) => {
+  try {
+    const limit = req.query.limit ? Number(req.query.limit) : 120;
+    const items = await pulses.listPublicExplore(req.user.id, { limit });
     return res.json({ success: true, data: { pulses: items } });
   } catch (err) {
     return next(err);
@@ -77,20 +111,21 @@ router.post(
         ? Number(req.body.lng)
         : null;
 
+      const mediaType = mediaTypeFromUpload(req.file, req.body.mediaType);
       const pulseId = randomUUID();
-      const ext = extFromMime(req.file.mimetype);
+      const ext = extFromMime(req.file.mimetype, req.file.originalname);
       const storageKey = `pulses/${req.user.id}/${pulseId}.${ext}`;
       const uploaded = await bunny.uploadBuffer(
         req.file.buffer,
         storageKey,
-        req.file.mimetype || 'image/png',
+        req.file.mimetype || (mediaType === 'video' ? 'video/mp4' : 'image/png'),
       );
 
       const pulse = await pulses.create({
         userId: req.user.id,
         mediaUrl: uploaded.url,
         storageKey: uploaded.storageKey,
-        mediaType: 'image',
+        mediaType,
         sourceType,
         // Unique per upload so check_in / direct batches don't collide.
         sourceId: pulseId,
