@@ -34,7 +34,7 @@ function parseStatements(sql) {
     .filter((s) => s.length > 0);
 }
 
-async function run() {
+async function runMigrations({ exit = false } = {}) {
   const dir = path.join(__dirname, 'migrations');
   const files = fs
     .readdirSync(dir)
@@ -79,10 +79,14 @@ async function run() {
   }
 
   logger.info('migrations_complete');
-  process.exit(0);
+  if (exit) process.exit(0);
 }
 
-run().catch((err) => {
-  logger.error('migrations_aborted', err);
-  process.exit(1);
-});
+if (require.main === module) {
+  runMigrations({ exit: true }).catch((err) => {
+    logger.error('migrations_aborted', err);
+    process.exit(1);
+  });
+}
+
+module.exports = { runMigrations };

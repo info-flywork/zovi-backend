@@ -21,9 +21,7 @@ const mapRoutes = require('./routes/map');
 const checkInRoutes = require('./routes/checkIns');
 const tribeRoutes = require('./routes/tribes');
 const wellKnownRoutes = require('./routes/wellKnown');
-const {
-  startTribeFormationSchedule,
-} = require('./services/tribeFormationSchedule');
+const { runMigrations } = require('./db/migrate');
 
 async function bootstrap() {
   initFirebase();
@@ -31,6 +29,13 @@ async function bootstrap() {
   const db = await healthCheck();
   if (!db.ok) {
     logger.error('startup_db_unhealthy', db);
+    process.exit(1);
+  }
+
+  try {
+    await runMigrations();
+  } catch (err) {
+    logger.error('startup_migrations_failed', err);
     process.exit(1);
   }
 

@@ -3,7 +3,35 @@
 const { randomUUID } = require('crypto');
 const { query } = require('../config/database');
 
+const ENSURE_PULSE_LIKES_SQL = `
+  CREATE TABLE IF NOT EXISTS pulse_likes (
+    pulse_id CHAR(36) NOT NULL,
+    user_id CHAR(36) NOT NULL,
+    created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    PRIMARY KEY (pulse_id, user_id),
+    CONSTRAINT fk_pulse_likes_pulse
+      FOREIGN KEY (pulse_id) REFERENCES pulses(id) ON DELETE CASCADE,
+    CONSTRAINT fk_pulse_likes_user
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    KEY idx_pulse_likes_user (user_id)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+`;
+
 class PulseRepository {
+  constructor() {
+    this._likesReady = null;
+  }
+
+  async ensureLikesTable() {
+    if (!this._likesReady) {
+      this._likesReady = query(ENSURE_PULSE_LIKES_SQL).catch((err) => {
+        this._likesReady = null;
+        throw err;
+      });
+    }
+    await this._likesReady;
+  }
+
   mapRow(row) {
     if (!row) return null;
     return {
@@ -93,6 +121,7 @@ class PulseRepository {
   }
 
   async findById(id, { viewerUserId = null } = {}) {
+    await this.ensureLikesTable();
     const rows = await query(
       `SELECT
          p.*,
@@ -109,6 +138,7 @@ class PulseRepository {
   }
 
   async like(pulseId, userId) {
+    await this.ensureLikesTable();
     const result = await query(
       `INSERT INTO pulse_likes (pulse_id, user_id, created_at)
        VALUES (?, ?, UTC_TIMESTAMP(3))
@@ -128,6 +158,7 @@ class PulseRepository {
   }
 
   async unlike(pulseId, userId) {
+    await this.ensureLikesTable();
     const result = await query(
       `DELETE FROM pulse_likes WHERE pulse_id = ? AND user_id = ?`,
       [pulseId, userId],
@@ -144,6 +175,7 @@ class PulseRepository {
   }
 
   async listForUser(userId, { limit = 60, offset = 0, viewerUserId = null } = {}) {
+    await this.ensureLikesTable();
     const safeLimit = Math.min(Math.max(Number(limit) || 60, 1), 100);
     const safeOffset = Math.max(Number(offset) || 0, 0);
     const viewer = viewerUserId || userId;
@@ -164,6 +196,7 @@ class PulseRepository {
   }
 
   async listPublicExplore(viewerUserId, { limit = 120 } = {}) {
+    await this.ensureLikesTable();
     const safeLimit = Math.min(Math.max(Number(limit) || 120, 1), 200);
     const rows = await query(
       `SELECT
