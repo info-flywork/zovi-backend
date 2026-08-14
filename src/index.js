@@ -22,6 +22,9 @@ const checkInRoutes = require('./routes/checkIns');
 const tribeRoutes = require('./routes/tribes');
 const wellKnownRoutes = require('./routes/wellKnown');
 const { runMigrations } = require('./db/migrate');
+const {
+  startTribeFormationSchedule,
+} = require('./services/tribeFormationSchedule');
 
 async function bootstrap() {
   initFirebase();
