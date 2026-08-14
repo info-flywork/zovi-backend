@@ -59,7 +59,11 @@ router.get('/me', requireFirebaseAuth, async (req, res, next) => {
   try {
     const limit = Number(req.query.limit) || 60;
     const offset = Number(req.query.offset) || 0;
-    const items = await pulses.listForUser(req.user.id, { limit, offset });
+    const items = await pulses.listForUser(req.user.id, {
+      limit,
+      offset,
+      viewerUserId: req.user.id,
+    });
     return res.json({ success: true, data: { pulses: items } });
   } catch (err) {
     return next(err);
@@ -75,6 +79,52 @@ router.get('/explore', requireFirebaseAuth, async (req, res, next) => {
     const limit = req.query.limit ? Number(req.query.limit) : 120;
     const items = await pulses.listPublicExplore(req.user.id, { limit });
     return res.json({ success: true, data: { pulses: items } });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /pulses/:id/like
+ */
+router.post('/:id/like', requireFirebaseAuth, async (req, res, next) => {
+  try {
+    const id = String(req.params.id || '').trim();
+    const existing = await pulses.findById(id, { viewerUserId: req.user.id });
+    if (!existing) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Pulse not found' },
+      });
+    }
+    const { pulse } = await pulses.like(id, req.user.id);
+    return res.json({
+      success: true,
+      data: { pulse: pulse || existing },
+    });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * DELETE /pulses/:id/like
+ */
+router.delete('/:id/like', requireFirebaseAuth, async (req, res, next) => {
+  try {
+    const id = String(req.params.id || '').trim();
+    const existing = await pulses.findById(id, { viewerUserId: req.user.id });
+    if (!existing) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Pulse not found' },
+      });
+    }
+    const updated = await pulses.unlike(id, req.user.id);
+    return res.json({
+      success: true,
+      data: { pulse: updated || existing },
+    });
   } catch (err) {
     return next(err);
   }

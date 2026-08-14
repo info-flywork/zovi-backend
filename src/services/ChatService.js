@@ -185,6 +185,11 @@ class ChatService {
     });
 
     const mapped = this.chat.mapMessageRow(row);
+    const isStoryReply =
+      replyText === 'story' ||
+      (replyText && replyText.startsWith('story:')) ||
+      replyText === 'pulse' ||
+      (replyText && replyText.startsWith('pulse:'));
     const preview =
       safeType === 'text'
         ? text.slice(0, 120)
@@ -194,7 +199,7 @@ class ChatService {
             ? 'Sesli mesaj'
             : 'Sticker';
     const mediaThumb =
-      safeType === 'image' && media ? media : null;
+      (safeType === 'image' || isStoryReply) && media ? media : null;
 
     let isGroup = !isDm;
     let groupName = '';

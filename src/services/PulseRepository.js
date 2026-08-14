@@ -20,6 +20,7 @@ class PulseRepository {
       lng: row.lng == null ? null : Number(row.lng),
       caption: row.caption || '',
       likeCount: Number(row.like_count || 0),
+      likedByMe: Boolean(row.liked_by_me),
       viewCount: Number(row.view_count || 0),
       createdAt: row.created_at,
       expiresAt: row.expires_at,
@@ -91,23 +92,73 @@ class PulseRepository {
     return this.findById(id);
   }
 
-  async findById(id) {
+  async findById(id, { viewerUserId = null } = {}) {
     const rows = await query(
-      `SELECT * FROM pulses WHERE id = ? AND deleted_at IS NULL LIMIT 1`,
-      [id],
+      `SELECT
+         p.*,
+         EXISTS(
+           SELECT 1 FROM pulse_likes pl
+           WHERE pl.pulse_id = p.id AND pl.user_id = ?
+         ) AS liked_by_me
+       FROM pulses p
+       WHERE p.id = ? AND p.deleted_at IS NULL
+       LIMIT 1`,
+      [viewerUserId || '', id],
     );
     return this.mapRow(rows[0]);
   }
 
-  async listForUser(userId, { limit = 60, offset = 0 } = {}) {
+  async like(pulseId, userId) {
+    const result = await query(
+      `INSERT INTO pulse_likes (pulse_id, user_id, created_at)
+       VALUES (?, ?, UTC_TIMESTAMP(3))
+       ON DUPLICATE KEY UPDATE created_at = created_at`,
+      [pulseId, userId],
+    );
+    const affected = Number(result?.affectedRows ?? 0);
+    const created = affected === 1;
+    if (created) {
+      await query(
+        `UPDATE pulses SET like_count = like_count + 1 WHERE id = ?`,
+        [pulseId],
+      );
+    }
+    const pulse = await this.findById(pulseId, { viewerUserId: userId });
+    return { pulse, created };
+  }
+
+  async unlike(pulseId, userId) {
+    const result = await query(
+      `DELETE FROM pulse_likes WHERE pulse_id = ? AND user_id = ?`,
+      [pulseId, userId],
+    );
+    if (result?.affectedRows === 1) {
+      await query(
+        `UPDATE pulses
+         SET like_count = GREATEST(like_count - 1, 0)
+         WHERE id = ?`,
+        [pulseId],
+      );
+    }
+    return this.findById(pulseId, { viewerUserId: userId });
+  }
+
+  async listForUser(userId, { limit = 60, offset = 0, viewerUserId = null } = {}) {
     const safeLimit = Math.min(Math.max(Number(limit) || 60, 1), 100);
     const safeOffset = Math.max(Number(offset) || 0, 0);
+    const viewer = viewerUserId || userId;
     const rows = await query(
-      `SELECT * FROM pulses
-       WHERE user_id = ? AND deleted_at IS NULL
-       ORDER BY created_at DESC
+      `SELECT
+         p.*,
+         EXISTS(
+           SELECT 1 FROM pulse_likes pl
+           WHERE pl.pulse_id = p.id AND pl.user_id = ?
+         ) AS liked_by_me
+       FROM pulses p
+       WHERE p.user_id = ? AND p.deleted_at IS NULL
+       ORDER BY p.created_at DESC
        LIMIT ? OFFSET ?`,
-      [userId, safeLimit, safeOffset],
+      [viewer, userId, safeLimit, safeOffset],
     );
     return rows.map((r) => this.mapRow(r));
   }
@@ -119,7 +170,11 @@ class PulseRepository {
          p.*,
          COALESCE(up.full_name, '') AS author_name,
          COALESCE(up.username, '') AS author_username,
-         COALESCE(up.avatar_url, '') AS author_avatar_url
+         COALESCE(up.avatar_url, '') AS author_avatar_url,
+         EXISTS(
+           SELECT 1 FROM pulse_likes pl
+           WHERE pl.pulse_id = p.id AND pl.user_id = ?
+         ) AS liked_by_me
        FROM pulses p
        LEFT JOIN user_profiles up ON up.user_id = p.user_id
        WHERE p.deleted_at IS NULL
@@ -132,7 +187,7 @@ class PulseRepository {
          )
        ORDER BY p.created_at DESC
        LIMIT ?`,
-      [viewerUserId, viewerUserId, safeLimit],
+      [viewerUserId, viewerUserId, viewerUserId, safeLimit],
     );
 
     return rows.map((row) => ({
