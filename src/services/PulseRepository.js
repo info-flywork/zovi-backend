@@ -174,11 +174,19 @@ class PulseRepository {
     return this.findById(pulseId, { viewerUserId: userId });
   }
 
-  async listForUser(userId, { limit = 60, offset = 0, viewerUserId = null } = {}) {
+  async listForUser(
+    userId,
+    { limit = 60, offset = 0, viewerUserId = null, viewerFollows = false } = {},
+  ) {
     await this.ensureLikesTable();
     const safeLimit = Math.min(Math.max(Number(limit) || 60, 1), 100);
     const safeOffset = Math.max(Number(offset) || 0, 0);
     const viewer = viewerUserId || userId;
+    const isSelf = Boolean(viewerUserId && viewerUserId === userId);
+    const audienceSql =
+      isSelf || viewerFollows
+        ? `p.audience IN ('public', 'friends_only')`
+        : `p.audience = 'public'`;
     const rows = await query(
       `SELECT
          p.*,
@@ -188,6 +196,7 @@ class PulseRepository {
          ) AS liked_by_me
        FROM pulses p
        WHERE p.user_id = ? AND p.deleted_at IS NULL
+         AND (${audienceSql})
        ORDER BY p.created_at DESC
        LIMIT ? OFFSET ?`,
       [viewer, userId, safeLimit, safeOffset],

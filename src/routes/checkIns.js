@@ -118,6 +118,7 @@ router.post('/', requireFirebaseAuth, async (req, res, next) => {
         : [],
       photoUrls: Array.isArray(req.body?.photoUrls) ? req.body.photoUrls : [],
       category: req.body?.category,
+      locale: req.body?.locale,
     });
 
     invalidateMapNearby();
@@ -140,6 +141,24 @@ router.post('/:id/accept-founder', requireFirebaseAuth, async (req, res, next) =
       userId: req.user.id,
       checkInId: req.params.id,
     });
+    invalidateUser(req.user.id);
+    return res.json({ success: true, data: result });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /check-ins/:id/accept-stamp
+ * Assign the offered stamp and spend this check-in's coins.
+ */
+router.post('/:id/accept-stamp', requireFirebaseAuth, async (req, res, next) => {
+  try {
+    const result = await checkIns.acceptStampOffer({
+      userId: req.user.id,
+      checkInId: req.params.id,
+    });
+    invalidateUser(req.user.id);
     return res.json({ success: true, data: result });
   } catch (err) {
     return next(err);

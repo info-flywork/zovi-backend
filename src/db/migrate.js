@@ -44,12 +44,10 @@ async function runMigrations({ exit = false } = {}) {
   await ensureMigrationsTable();
   const done = await appliedSet();
   const pool = getPool();
+  let applied = 0;
 
   for (const file of files) {
-    if (done.has(file)) {
-      logger.info('migration_skip', { file });
-      continue;
-    }
+    if (done.has(file)) continue;
 
     const full = path.join(dir, file);
     const sql = fs.readFileSync(full, 'utf8');
@@ -69,6 +67,7 @@ async function runMigrations({ exit = false } = {}) {
         'INSERT INTO schema_migrations (filename) VALUES (?)',
         [file],
       );
+      applied += 1;
       logger.info('migration_ok', { file });
     } catch (err) {
       logger.error('migration_failed', { file, err });
@@ -78,7 +77,9 @@ async function runMigrations({ exit = false } = {}) {
     }
   }
 
-  logger.info('migrations_complete');
+  if (applied > 0) {
+    logger.info('migrations_complete', { applied });
+  }
   if (exit) process.exit(0);
 }
 

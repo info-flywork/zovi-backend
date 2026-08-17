@@ -81,6 +81,7 @@ class CheckInService {
     taggedUserIds = [],
     photoUrls = [],
     category = 'other',
+    locale = 'en',
   }) {
     if (!userId || !placeName || !Number.isFinite(lat) || !Number.isFinite(lng)) {
       const err = new Error('Invalid check-in payload');
@@ -179,6 +180,10 @@ class CheckInService {
 
     const totalCoins = rewards.reduce((sum, r) => sum + r.coins, 0);
     const checkInId = randomUUID();
+    const offeredStamp =
+      totalCoins > 0
+        ? await this.stamps.pickUnownedRandom(userId, { locale })
+        : null;
     const privacy =
       photoPrivacy === 'friends' || photoPrivacy === 'friends_only'
         ? 'friends'
@@ -204,8 +209,9 @@ class CheckInService {
       await conn.execute(
         `INSERT INTO check_ins (
            id, user_id, venue_id, place_name, caption, lat, lng,
-           photo_privacy, photo_urls_json, coins_earned, is_venue_founder, is_first_ever, is_active_on_map
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+           photo_privacy, photo_urls_json, coins_earned, is_venue_founder, is_first_ever,
+           offered_stamp_id, is_active_on_map
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
         [
           checkInId,
           userId,
@@ -219,6 +225,7 @@ class CheckInService {
           totalCoins,
           isVenueFounder ? 1 : 0,
           isFirstEver ? 1 : 0,
+          offeredStamp?.id || null,
         ],
       );
 
@@ -338,6 +345,15 @@ class CheckInService {
       totalCoins,
       coinsBalance: txResult.balance,
       founderOffer,
+      stampOffer: offeredStamp
+        ? {
+            stampId: offeredStamp.id,
+            slug: offeredStamp.slug,
+            name: offeredStamp.localizedName || offeredStamp.slug,
+            imageUrl: offeredStamp.cdnUrl || null,
+            coinCost: totalCoins,
+          }
+        : null,
       friendshipStreaks: txResult.pairs,
     };
   }
@@ -359,10 +375,13 @@ class CheckInService {
          ci.*,
          t.label AS title_label,
          t.emoji AS title_emoji,
-         t.slug AS title_slug
+         t.slug AS title_slug,
+         offered.cdn_url AS offered_stamp_cdn_url,
+         offered.slug AS offered_stamp_slug
        FROM check_ins ci
        LEFT JOIN user_profiles up ON up.user_id = ci.user_id
        LEFT JOIN titles t ON t.id = up.equipped_title_id
+       LEFT JOIN stamps offered ON offered.id = ci.offered_stamp_id
        WHERE ci.user_id = ?
          AND ci.is_active_on_map = 1
          AND ci.deleted_at IS NULL
@@ -377,9 +396,14 @@ class CheckInService {
     const photoUrls = await this._photoUrlsForRow(row);
 
     let stampImageUrl = null;
-    if (Number(row.is_venue_founder)) {
+    let stampSlug = null;
+    if (row.stamp_accepted_at && row.offered_stamp_cdn_url) {
+      stampImageUrl = row.offered_stamp_cdn_url;
+      stampSlug = row.offered_stamp_slug || null;
+    } else if (Number(row.is_venue_founder)) {
       const stamp = await this.stamps.findBySlug('founder');
       stampImageUrl = stamp?.cdnUrl || null;
+      stampSlug = 'founder';
     }
 
     const titleLabel = row.title_label
@@ -395,7 +419,7 @@ class CheckInService {
       photoUrls,
       isVenueFounder: Boolean(Number(row.is_venue_founder)),
       stampImageUrl,
-      stampSlug: Number(row.is_venue_founder) ? 'founder' : null,
+      stampSlug,
       titleLabel,
     };
   }
@@ -539,6 +563,120 @@ class CheckInService {
             slug: stamp.slug,
             imageUrl: stamp.cdnUrl || null,
             name: stamp.localizedName || 'Founder',
+          }
+        : null,
+    };
+  }
+
+  async acceptStampOffer({ userId, checkInId }) {
+    const tx = await withTransaction(async (conn) => {
+      const [rows] = await conn.execute(
+        `SELECT * FROM check_ins
+         WHERE id = ? AND user_id = ? AND deleted_at IS NULL
+         LIMIT 1
+         FOR UPDATE`,
+        [checkInId, userId],
+      );
+      const checkIn = rows[0];
+      if (!checkIn) {
+        const err = new Error('Check-in not found');
+        err.status = 404;
+        err.code = 'CHECK_IN_NOT_FOUND';
+        throw err;
+      }
+      if (checkIn.stamp_accepted_at) {
+        const err = new Error('Stamp offer already accepted');
+        err.status = 409;
+        err.code = 'STAMP_ALREADY_ACCEPTED';
+        throw err;
+      }
+      const stampId = checkIn.offered_stamp_id;
+      if (!stampId) {
+        const err = new Error('No stamp offer on this check-in');
+        err.status = 400;
+        err.code = 'NO_STAMP_OFFER';
+        throw err;
+      }
+      const cost = Number(checkIn.coins_earned) || 0;
+      if (cost <= 0) {
+        const err = new Error('No coins to spend');
+        err.status = 400;
+        err.code = 'NO_COINS';
+        throw err;
+      }
+
+      const [owned] = await conn.execute(
+        `SELECT stamp_id FROM user_stamps
+         WHERE user_id = ? AND stamp_id = ?
+         LIMIT 1`,
+        [userId, stampId],
+      );
+      if (owned[0]) {
+        const err = new Error('Stamp already owned');
+        err.status = 409;
+        err.code = 'STAMP_ALREADY_OWNED';
+        throw err;
+      }
+
+      const [profiles] = await conn.execute(
+        `SELECT coins FROM user_profiles
+         WHERE user_id = ?
+         LIMIT 1
+         FOR UPDATE`,
+        [userId],
+      );
+      const balance = Number(profiles[0]?.coins || 0);
+      if (balance < cost) {
+        const err = new Error('Not enough coins');
+        err.status = 400;
+        err.code = 'INSUFFICIENT_COINS';
+        throw err;
+      }
+
+      await conn.execute(
+        `INSERT INTO user_stamps (user_id, stamp_id, source)
+         VALUES (?, ?, 'check_in')`,
+        [userId, stampId],
+      );
+
+      const nextBalance = balance - cost;
+      await conn.execute(
+        `INSERT INTO coin_transactions
+           (id, user_id, delta, reason, source_type, source_id, balance_after)
+         VALUES (?, ?, ?, 'stamp_unlock', 'check_in', ?, ?)`,
+        [randomUUID(), userId, -cost, checkInId, nextBalance],
+      );
+      await conn.execute(
+        `UPDATE user_profiles SET coins = ? WHERE user_id = ?`,
+        [nextBalance, userId],
+      );
+      await conn.execute(
+        `UPDATE check_ins
+         SET stamp_accepted_at = CURRENT_TIMESTAMP(3)
+         WHERE id = ?`,
+        [checkInId],
+      );
+
+      return { cost, nextBalance, stampId };
+    });
+
+    const stamp = await this.stamps.findById(tx.stampId);
+    logger.info('stamp_offer_accepted', {
+      userId,
+      checkInId,
+      stampId: tx.stampId,
+      coinsSpent: tx.cost,
+    });
+    return {
+      accepted: true,
+      coinsSpent: tx.cost,
+      coinsBalance: tx.nextBalance,
+      stamp: stamp
+        ? {
+            id: stamp.id,
+            slug: stamp.slug,
+            name: stamp.localizedName || stamp.slug,
+            imageUrl: stamp.cdnUrl || null,
           }
         : null,
     };

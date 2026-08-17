@@ -213,7 +213,7 @@ router.get('/by-username/:username/pulses', requireFirebaseAuth, async (req, res
     );
     if (!resolved) return undefined;
 
-    const { profile, viewerId, blockedByMe } = resolved;
+    const { profile, viewerId, blockedByMe, viewerFollows } = resolved;
     if (blockedByMe) {
       return res.json({ success: true, data: { pulses: [] } });
     }
@@ -223,6 +223,7 @@ router.get('/by-username/:username/pulses', requireFirebaseAuth, async (req, res
       limit,
       offset,
       viewerUserId: viewerId,
+      viewerFollows,
     });
     return res.json({ success: true, data: { pulses: items } });
   } catch (err) {

@@ -53,6 +53,62 @@ class StampRepository {
     return rows.map((row) => Stamp.fromRow(row));
   }
 
+  async findById(id) {
+    const rows = await query(
+      `SELECT
+        s.id,
+        s.slug,
+        s.cdn_url,
+        s.sort_order,
+        s.is_active,
+        s.created_at,
+        s.updated_at,
+        t_en.localized_name AS localized_name,
+        t_en.localized_name AS name_en
+      FROM stamps s
+      LEFT JOIN stamp_translations t_en
+        ON t_en.stamp_id = s.id AND t_en.locale = 'en'
+      WHERE s.id = ?
+      LIMIT 1`,
+      [id],
+    );
+    return Stamp.fromRow(rows[0]);
+  }
+
+  /**
+   * Random catalog stamp the user does not already own.
+   * Excludes signup / founder stamps — those have their own flows.
+   */
+  async pickUnownedRandom(userId, { locale = 'en' } = {}) {
+    const normalized = normalizeLocale(locale);
+    const rows = await query(
+      `SELECT
+        s.id,
+        s.slug,
+        s.cdn_url,
+        s.sort_order,
+        s.is_active,
+        s.created_at,
+        s.updated_at,
+        COALESCE(t_local.localized_name, t_en.localized_name, s.slug) AS localized_name,
+        t_en.localized_name AS name_en
+      FROM stamps s
+      LEFT JOIN user_stamps us
+        ON us.stamp_id = s.id AND us.user_id = ?
+      LEFT JOIN stamp_translations t_local
+        ON t_local.stamp_id = s.id AND t_local.locale = ?
+      LEFT JOIN stamp_translations t_en
+        ON t_en.stamp_id = s.id AND t_en.locale = 'en'
+      WHERE s.is_active = 1
+        AND us.user_id IS NULL
+        AND s.slug NOT IN ('blue_tick', 'founder')
+      ORDER BY RAND()
+      LIMIT 1`,
+      [userId, normalized],
+    );
+    return Stamp.fromRow(rows[0]);
+  }
+
   async findBySlug(slug) {
     const rows = await query(
       `SELECT
@@ -95,6 +151,15 @@ class StampRepository {
       awarded: (result?.affectedRows ?? 0) > 0,
       stamp,
     };
+  }
+
+  async awardById(userId, stampId, { source = 'system' } = {}) {
+    const result = await query(
+      `INSERT IGNORE INTO user_stamps (user_id, stamp_id, source)
+       VALUES (?, ?, ?)`,
+      [userId, stampId, source],
+    );
+    return (result?.affectedRows ?? 0) > 0;
   }
 
   async listForUser(userId, { locale = 'en' } = {}) {
