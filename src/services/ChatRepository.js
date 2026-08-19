@@ -119,6 +119,7 @@ class ChatRepository {
          IF(
            dp.conversation_id IS NULL,
            COALESCE(
+             NULLIF(TRIM(t.photo_url), ''),
              (
                SELECT up2.avatar_url
                FROM tribe_members tm
@@ -192,6 +193,7 @@ class ChatRepository {
          IF(
            dp.conversation_id IS NULL,
            COALESCE(
+             NULLIF(TRIM(t.photo_url), ''),
              (
                SELECT up2.avatar_url
                FROM tribe_members tm

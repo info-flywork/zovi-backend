@@ -25,6 +25,8 @@ const CATEGORY_EMOJI = {
   other: '✨',
 };
 
+const MANUAL_TRIBE_COIN_COST = 100;
+
 function normalizeCategory(raw) {
   const aliased = normalizeCheckInCategory(raw);
   if (aliased) return aliased;
@@ -161,20 +163,21 @@ class TribeRepository {
   }
 
   /**
-   * Real member counts and up to 3 member avatars per tribe, straight from
-   * tribe_members joined to user_profiles. This is the source of truth for
-   * "N üye" and the avatar pile -- no cached/seeded numbers.
-   * @returns {Promise<Map<string, { count: number, avatars: string[] }>>}
+   * Member counts + up to 3 avatars, scoped to the tribes on screen.
    */
-  async membersByTribe() {
+  async membersByTribeIds(tribeIds) {
+    const ids = [...new Set((tribeIds || []).map((id) => String(id || '').trim()).filter(Boolean))];
+    const map = new Map();
+    if (ids.length === 0) return map;
+    const placeholders = ids.map(() => '?').join(',');
     const rows = await query(
       `SELECT tm.tribe_id, up.avatar_url
        FROM tribe_members tm
        INNER JOIN user_profiles up ON up.user_id = tm.user_id
-       WHERE tm.state = 'member'
+       WHERE tm.state = 'member' AND tm.tribe_id IN (${placeholders})
        ORDER BY tm.joined_at DESC, tm.created_at DESC`,
+      ids,
     );
-    const map = new Map();
     for (const row of rows) {
       const key = String(row.tribe_id);
       const entry = map.get(key) || { count: 0, avatars: [] };
@@ -186,30 +189,73 @@ class TribeRepository {
     return map;
   }
 
-  _resolve(tribe, streakDays, membership, memberInfo) {
+  async membersByTribe() {
+    return this.membersByTribeIds(
+      (await query(`SELECT id FROM tribes WHERE status = 'active'`)).map((row) => row.id),
+    );
+  }
+
+  /**
+   * Best streak of any type: distinct check-in days or friendship streaks.
+   */
+  async bestStreak(userId) {
+    const [dayRows, streakRows] = await Promise.all([
+      query(
+        `SELECT COUNT(DISTINCT DATE(checked_at)) AS days
+         FROM check_ins
+         WHERE user_id = ? AND deleted_at IS NULL`,
+        [userId],
+      ),
+      query(
+        `SELECT MAX(streak_count) AS streak
+         FROM friendship_streaks
+         WHERE user_low_id = ? OR user_high_id = ?`,
+        [userId, userId],
+      ),
+    ]);
+    return Math.max(
+      Number(dayRows[0]?.days) || 0,
+      Number(streakRows[0]?.streak) || 0,
+    );
+  }
+
+  _resolve(tribe, bestStreak, membership, memberInfo) {
     const category = normalizeCategory(tribe.category);
     const threshold = Number(tribe.threshold) || 10;
     const isFeatured = Boolean(tribe.is_featured);
     const isMember = membership?.state === 'member';
-    // Progress prefers the district-accurate value stored by formation; falls
-    // back to the category streak so a fresh check-in still shows movement
-    // before the nightly pass records it.
-    const days = Number(streakDays.get(category) || 0);
-    const stored = membership?.progress != null ? Number(membership.progress) : 0;
-    const progress = isMember ? threshold : Math.min(Math.max(stored, days), threshold);
-    const unlocked = isMember || isFeatured || progress >= threshold;
+    const streak = Number(bestStreak) || 0;
+    const progress = isMember ? threshold : Math.min(streak, threshold);
+    const unlocked = isMember || streak >= threshold;
 
     let state = 'locked';
     if (isMember) state = 'member';
     else if (unlocked) state = 'unlocked';
 
+    const photoUrl = String(tribe.photo_url || '').trim();
+    const isUserCreated = String(tribe.area_key || '').startsWith('custom-');
+    const areaKey = String(tribe.area_key || '');
+    const catalogPhoto = areaKey.startsWith('catalog-')
+      ? `assets/images/tribes/${areaKey.slice('catalog-'.length)}.jpg`
+      : '';
+    const resolvedPhoto = photoUrl || catalogPhoto;
+    let avatars = [...(memberInfo?.avatars || [])];
+    if (isUserCreated && !photoUrl) {
+      avatars = [];
+    }
+
     return {
       id: tribe.id,
       category,
       areaKey: tribe.area_key,
+      isUserCreated,
       areaLabel: tribe.area_label || '',
       name: tribe.name,
+      nameKey: String(tribe.name_key || '').trim(),
       description: tribe.description || '',
+      descriptionKey: String(tribe.name_key || '')
+        .trim()
+        .replace(/^tribe_name_/, 'tribe_desc_'),
       emoji: tribe.emoji || CATEGORY_EMOJI[category],
       cadenceLabel: tribe.cadence_label || '',
       threshold,
@@ -219,7 +265,12 @@ class TribeRepository {
       state,
       isFeatured,
       memberCount: memberInfo?.count || 0,
-      avatars: memberInfo?.avatars || [],
+      avatars,
+      photoUrl: resolvedPhoto,
+      ownerUserId: String(tribe.owner_user_id || '').trim(),
+      isOwner:
+        String(tribe.owner_user_id || '').trim() !== '' &&
+        String(tribe.owner_user_id || '').trim() === String(membership?.userId || ''),
       conversationId: tribe.conversation_id || null,
     };
   }
@@ -258,54 +309,72 @@ class TribeRepository {
   }
 
   /**
-   * Everything the Tribe screen needs, bucketed for the client:
-   *   featured -> invitation cards (carousel)
-   *   tribes   -> the list below, ranked by proximity to the user's district
-   *
-   * Always returns the full active catalogue, so the screen is never empty for
-   * any user -- far-away users just fall back to city-wide ordering.
+   * Same default catalogue for every user, plus the user's own custom groups.
+   * Featured = unlocked (can join). List = members + locked, paginated.
    */
-  async listForUser(userId, { lat, lng } = {}) {
-    const [tribeRows, streakDays, membership, members, context] =
-      await Promise.all([
-        query(
-          `SELECT * FROM tribes
-           WHERE status = 'active'
-           ORDER BY sort_order ASC, created_at ASC`,
-        ),
-        this.categoryProgress(userId),
-        this.membershipMap(userId),
-        this.membersByTribe(),
-        this.resolveUserContext(userId, lat, lng),
-      ]);
+  async listForUser(userId, { limit = 15, offset = 0 } = {}) {
+    const safeLimit = Math.min(Math.max(Number(limit) || 15, 1), 50);
+    const safeOffset = Math.max(Number(offset) || 0, 0);
+
+    const [tribeRows, bestStreak, membership] = await Promise.all([
+      query(
+        `SELECT * FROM tribes
+         WHERE status = 'active'
+         ORDER BY sort_order ASC, created_at ASC`,
+      ),
+      this.bestStreak(userId),
+      this.membershipMap(userId),
+    ]);
 
     const featured = [];
-    const tribes = [];
+    const list = [];
     for (const row of tribeRows) {
       const item = this._resolve(
         row,
-        streakDays,
-        membership.get(String(row.id)),
-        members.get(String(row.id)),
+        bestStreak,
+        {
+          ...(membership.get(String(row.id)) || {}),
+          userId,
+        },
+        { count: Number(row.member_count_cache) || 0, avatars: [] },
       );
-      item._distanceKm = this._rankDistanceKm(row.area_key, context);
-      // Unlocked-but-not-joined tribes are the algorithm's open invitations.
+      if (item.isUserCreated && item.state !== 'member' && !item.isOwner) {
+        continue;
+      }
       if (item.state === 'unlocked') featured.push(item);
-      else tribes.push(item);
+      else list.push(item);
     }
 
-    // Nearby first; joined members bubble up; then bigger tribes.
-    tribes.sort((a, b) => {
+    featured.sort((a, b) => (Number(a.threshold) || 0) - (Number(b.threshold) || 0));
+    list.sort((a, b) => {
       if (a.state !== b.state) {
         if (a.state === 'member') return -1;
         if (b.state === 'member') return 1;
       }
-      if (a._distanceKm !== b._distanceKm) return a._distanceKm - b._distanceKm;
-      return b.memberCount - a.memberCount;
+      const aCustom = a.isUserCreated ? 1 : 0;
+      const bCustom = b.isUserCreated ? 1 : 0;
+      if (aCustom !== bCustom) return bCustom - aCustom;
+      return (Number(a.threshold) || 0) - (Number(b.threshold) || 0);
     });
 
-    const strip = ({ _distanceKm, ...rest }) => rest;
-    return { featured: featured.map(strip), tribes: tribes.map(strip) };
+    const featuredPage = safeOffset === 0 ? featured.slice(0, 8) : [];
+    const tribesPage = list.slice(safeOffset, safeOffset + safeLimit);
+    const pageIds = [...featuredPage, ...tribesPage].map((item) => item.id);
+    const members = await this.membersByTribeIds(pageIds);
+    const withAvatars = (item) => {
+      const info = members.get(String(item.id));
+      if (!info) return item;
+      item.memberCount = info.count;
+      item.avatars = info.avatars;
+      return item;
+    };
+
+    return {
+      featured: featuredPage.map(withAvatars),
+      tribes: tribesPage.map(withAvatars),
+      hasMore: safeOffset + safeLimit < list.length,
+      nextOffset: safeOffset + tribesPage.length,
+    };
   }
 
   async findById(tribeId) {
@@ -426,20 +495,26 @@ class TribeRepository {
       await this.syncConversationMembers(tribe.id, conversationId);
     }
 
-    const [fresh, streakDays, membersInfo, memberList] = await Promise.all([
+    const [fresh, bestStreak, membersInfo, memberList] = await Promise.all([
       this.findById(tribe.id),
-      this.categoryProgress(userId),
+      this.bestStreak(userId),
       this.membersByTribe(),
       this.listMembers(tribe.id, userId),
     ]);
     const item = this._resolve(
       fresh,
-      streakDays,
-      membership.get(String(tribe.id)),
+      bestStreak,
+      {
+        ...(membership.get(String(tribe.id)) || {}),
+        userId,
+      },
       membersInfo.get(String(tribe.id)),
     );
     item.memberCount = memberList.length;
     item.members = memberList;
+    const ownerId = await this._resolveOwnerUserId(fresh);
+    item.ownerUserId = ownerId;
+    item.isOwner = ownerId !== '' && ownerId === String(userId);
     return { ok: true, tribe: item };
   }
 
@@ -454,16 +529,12 @@ class TribeRepository {
       return { ok: false, reason: 'not_found' };
     }
 
-    const streakDays = await this.categoryProgress(userId);
-    const category = normalizeCategory(tribe.category);
+    const bestStreak = await this.bestStreak(userId);
     const threshold = Number(tribe.threshold) || 10;
     const membership = await this.membershipMap(userId);
     const existing = membership.get(String(tribe.id));
     const alreadyMember = existing?.state === 'member';
-    const eligible =
-      alreadyMember ||
-      Boolean(tribe.is_featured) ||
-      Number(streakDays.get(category) || 0) >= threshold;
+    const eligible = alreadyMember || bestStreak >= threshold;
 
     if (!eligible) {
       return { ok: false, reason: 'not_eligible' };
@@ -504,8 +575,8 @@ class TribeRepository {
     ]);
     const item = this._resolve(
       fresh,
-      streakDays,
-      { state: 'member', progress: threshold },
+      bestStreak,
+      { state: 'member', progress: threshold, userId },
       members.get(String(tribe.id)),
     );
     item.memberCount = memberList.length;
@@ -556,15 +627,15 @@ class TribeRepository {
       });
     }
 
-    const [fresh, streakDays, members] = await Promise.all([
+    const [fresh, bestStreak, members] = await Promise.all([
       this.findById(tribe.id),
-      this.categoryProgress(userId),
+      this.bestStreak(userId),
       this.membersByTribe(),
     ]);
     const item = this._resolve(
       fresh,
-      streakDays,
-      { state: 'eligible', progress: existing?.progress || 0 },
+      bestStreak,
+      { state: 'eligible', progress: existing?.progress || 0, userId },
       members.get(String(tribe.id)),
     );
     return { ok: true, tribe: item };
@@ -579,6 +650,255 @@ class TribeRepository {
     );
     return rows[0] || null;
   }
+
+  /**
+   * User-created group. Costs coins atomically with tribe + conversation setup.
+   * @returns {Promise<{ ok: boolean, reason?: string, tribe?: object, coinsBalance?: number }>}
+   */
+  async createManual(userId, { name, coinCost = MANUAL_TRIBE_COIN_COST } = {}) {
+    const safeName = String(name || '').trim().slice(0, 160);
+    if (!safeName) {
+      return { ok: false, reason: 'invalid_name' };
+    }
+
+    const cost = Number(coinCost);
+    if (!Number.isFinite(cost) || cost <= 0) {
+      return { ok: false, reason: 'invalid_coin_cost' };
+    }
+
+    const tribeId = randomUUID();
+    const conversationId = randomUUID();
+    const areaKey = `custom-${tribeId}`;
+    const category = 'other';
+    const threshold = 10;
+
+    const profileRows = await query(
+      `SELECT location_text AS locationText
+       FROM user_profiles
+       WHERE user_id = ?
+       LIMIT 1`,
+      [userId],
+    );
+    const areaLabel = String(profileRows[0]?.locationText || '')
+      .trim()
+      .slice(0, 120);
+
+    let coinsBalance = 0;
+
+    try {
+      await withTransaction(async (conn) => {
+        const [profiles] = await conn.execute(
+          `SELECT coins FROM user_profiles
+           WHERE user_id = ?
+           LIMIT 1
+           FOR UPDATE`,
+          [userId],
+        );
+        const balance = Number(profiles[0]?.coins || 0);
+        if (balance < cost) {
+          const err = new Error('Not enough coins');
+          err.status = 402;
+          err.code = 'INSUFFICIENT_COINS';
+          throw err;
+        }
+
+        coinsBalance = balance - cost;
+        await conn.execute(
+          `INSERT INTO coin_transactions
+             (id, user_id, delta, reason, source_type, source_id, balance_after)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [
+            randomUUID(),
+            userId,
+            -cost,
+            'spend_group',
+            'tribe',
+            tribeId,
+            coinsBalance,
+          ],
+        );
+        await conn.execute(
+          `UPDATE user_profiles SET coins = ? WHERE user_id = ?`,
+          [coinsBalance, userId],
+        );
+
+        await conn.execute(`INSERT INTO conversations (id) VALUES (?)`, [
+          conversationId,
+        ]);
+        await conn.execute(
+          `INSERT INTO tribes (
+             id, category, area_key, area_label, name, description, emoji,
+             cadence_label, threshold, min_members, member_count_cache,
+             status, is_featured, conversation_id, sort_order
+             , owner_user_id
+           ) VALUES (?, ?, ?, ?, ?, '', '✨', '', ?, 1, 1, 'active', 0, ?, 9000, ?)`,
+          [
+            tribeId,
+            category,
+            areaKey,
+            areaLabel || null,
+            safeName,
+            threshold,
+            conversationId,
+            userId,
+          ],
+        );
+        await conn.execute(
+          `INSERT INTO tribe_members
+             (tribe_id, user_id, state, progress, joined_at, unlocked_at, last_progress_at)
+           VALUES (?, ?, 'member', ?, CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3))`,
+          [tribeId, userId, threshold],
+        );
+        await conn.execute(
+          `INSERT INTO conversation_members
+             (conversation_id, user_id, folder, unread_count, deleted_at)
+           VALUES (?, ?, 'inbox', 0, NULL)
+           ON DUPLICATE KEY UPDATE
+             folder = 'inbox',
+             deleted_at = NULL`,
+          [conversationId, userId],
+        );
+      });
+    } catch (err) {
+      if (err.code === 'INSUFFICIENT_COINS') {
+        return { ok: false, reason: 'insufficient_coins' };
+      }
+      throw err;
+    }
+
+    const [fresh, streakDays, members, memberList] = await Promise.all([
+      this.findById(tribeId),
+      this.categoryProgress(userId),
+      this.membersByTribe(),
+      this.listMembers(tribeId, userId),
+    ]);
+    const item = this._resolve(
+      fresh,
+      streakDays,
+      { state: 'member', progress: threshold, userId },
+      members.get(String(tribeId)),
+    );
+    item.memberCount = memberList.length;
+    item.members = memberList;
+    item.conversationId = conversationId;
+    item.ownerUserId = String(userId);
+    item.isOwner = true;
+    return { ok: true, tribe: item, coinsBalance };
+  }
+
+  async _resolveOwnerUserId(tribe) {
+    const stored = String(tribe.owner_user_id || '').trim();
+    if (stored) return stored;
+    if (!String(tribe.area_key || '').startsWith('custom-')) return '';
+    const rows = await query(
+      `SELECT user_id AS userId
+       FROM tribe_members
+       WHERE tribe_id = ? AND state = 'member'
+       ORDER BY joined_at ASC, created_at ASC
+       LIMIT 1`,
+      [tribe.id],
+    );
+    return String(rows[0]?.userId || '').trim();
+  }
+
+  async updatePhoto(userId, tribeId, { photoUrl }) {
+    const id = String(tribeId || '').trim();
+    const url = String(photoUrl || '').trim();
+    if (!id) return { ok: false, reason: 'not_found' };
+    if (!url) return { ok: false, reason: 'invalid_photo' };
+
+    const tribe = await this.findById(id);
+    if (!tribe || tribe.status === 'dormant') {
+      return { ok: false, reason: 'not_found' };
+    }
+    const owner = await this._resolveOwnerUserId(tribe);
+    if (!owner || owner !== String(userId || '').trim()) {
+      return { ok: false, reason: 'forbidden' };
+    }
+    if (!String(tribe.owner_user_id || '').trim()) {
+      await query(`UPDATE tribes SET owner_user_id = ? WHERE id = ?`, [
+        owner,
+        id,
+      ]);
+    }
+
+    await query(`UPDATE tribes SET photo_url = ? WHERE id = ?`, [url, id]);
+    const [fresh, streakDays, membership, members, memberList] = await Promise.all([
+      this.findById(id),
+      this.categoryProgress(userId),
+      this.membershipMap(userId),
+      this.membersByTribe(),
+      this.listMembers(id, userId),
+    ]);
+    const item = this._resolve(
+      fresh,
+      streakDays,
+      {
+        ...(membership.get(String(id)) || { state: 'member', progress: 10 }),
+        userId,
+      },
+      members.get(String(id)),
+    );
+    item.memberCount = memberList.length;
+    item.members = memberList;
+    return { ok: true, tribe: item };
+  }
+
+  /**
+   * Owner-only hard delete for user-created groups.
+   * Deletes tribe and its conversation/messages atomically.
+   */
+  async deleteByOwner(userId, tribeId) {
+    const id = String(tribeId || '').trim();
+    if (!id) return { ok: false, reason: 'not_found' };
+    const tribe = await this.findById(id);
+    if (!tribe || tribe.status === 'dormant') {
+      return { ok: false, reason: 'not_found' };
+    }
+    if (!String(tribe.area_key || '').startsWith('custom-')) {
+      return { ok: false, reason: 'forbidden' };
+    }
+    const owner = await this._resolveOwnerUserId(tribe);
+    if (!owner || owner !== String(userId || '').trim()) {
+      return { ok: false, reason: 'forbidden' };
+    }
+
+    await withTransaction(async (conn) => {
+      const [rows] = await conn.execute(
+        `SELECT id, conversation_id AS conversationId, owner_user_id AS ownerUserId, area_key AS areaKey
+         FROM tribes
+         WHERE id = ?
+         LIMIT 1
+         FOR UPDATE`,
+        [id],
+      );
+      const locked = rows?.[0];
+      if (!locked) return;
+      if (!String(locked.areaKey || '').startsWith('custom-')) {
+        const err = new Error('Forbidden');
+        err.code = 'FORBIDDEN';
+        throw err;
+      }
+      const lockedOwner = String(locked.ownerUserId || '').trim() || owner;
+      if (lockedOwner !== String(userId || '').trim()) {
+        const err = new Error('Forbidden');
+        err.code = 'FORBIDDEN';
+        throw err;
+      }
+
+      await conn.execute(`DELETE FROM tribes WHERE id = ?`, [id]);
+      const conversationId = String(locked.conversationId || '').trim();
+      if (conversationId) {
+        await conn.execute(`DELETE FROM conversations WHERE id = ?`, [conversationId]);
+      }
+    });
+
+    return { ok: true };
+  }
 }
 
-module.exports = { TribeRepository, normalizeCategory };
+module.exports = {
+  TribeRepository,
+  normalizeCategory,
+  MANUAL_TRIBE_COIN_COST,
+};

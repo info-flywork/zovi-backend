@@ -465,6 +465,62 @@ class UserRepository {
     return rows[0] || null;
   }
 
+  async getCoinBalance(userId) {
+    const rows = await query(
+      `SELECT coins FROM user_profiles WHERE user_id = ? LIMIT 1`,
+      [userId],
+    );
+    return Number(rows[0]?.coins || 0);
+  }
+
+  async spendCoins(userId, { amount, reason, sourceType = null, sourceId = null }) {
+    const cost = Number(amount);
+    if (!Number.isFinite(cost) || cost <= 0) {
+      const err = new Error('Invalid coin amount');
+      err.status = 400;
+      err.code = 'INVALID_COIN_AMOUNT';
+      throw err;
+    }
+
+    return withTransaction(async (conn) => {
+      const [profiles] = await conn.execute(
+        `SELECT coins FROM user_profiles
+         WHERE user_id = ?
+         LIMIT 1
+         FOR UPDATE`,
+        [userId],
+      );
+      const balance = Number(profiles[0]?.coins || 0);
+      if (balance < cost) {
+        const err = new Error('Not enough coins');
+        err.status = 402;
+        err.code = 'INSUFFICIENT_COINS';
+        throw err;
+      }
+
+      const nextBalance = balance - cost;
+      await conn.execute(
+        `INSERT INTO coin_transactions
+           (id, user_id, delta, reason, source_type, source_id, balance_after)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          randomUUID(),
+          userId,
+          -cost,
+          reason,
+          sourceType,
+          sourceId,
+          nextBalance,
+        ],
+      );
+      await conn.execute(
+        `UPDATE user_profiles SET coins = ? WHERE user_id = ?`,
+        [nextBalance, userId],
+      );
+      return nextBalance;
+    });
+  }
+
   async createPlan(userId, {
     placeName,
     subtitle = null,
@@ -603,6 +659,105 @@ class UserRepository {
       [viewerId, ownerId],
     );
     return Boolean(rows[0]);
+  }
+
+  async recordProfileView(ownerUserId, viewerUserId) {
+    const ownerId = String(ownerUserId || '').trim();
+    const viewerId = String(viewerUserId || '').trim();
+    if (!ownerId || !viewerId || ownerId === viewerId) return;
+    await query(
+      `INSERT INTO profile_views (
+         owner_user_id, viewer_user_id, view_count, first_viewed_at, last_viewed_at
+       )
+       VALUES (?, ?, 1, CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3))
+       ON DUPLICATE KEY UPDATE
+         view_count = view_count + 1,
+         last_viewed_at = CURRENT_TIMESTAMP(3)`,
+      [ownerId, viewerId],
+    );
+  }
+
+  async listProfileViewers(ownerUserId, { limit = 50, offset = 0 } = {}) {
+    const ownerId = String(ownerUserId || '').trim();
+    if (!ownerId) return [];
+    const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 200);
+    const safeOffset = Math.max(Number(offset) || 0, 0);
+    return query(
+      `SELECT
+         pv.viewer_user_id AS user_id,
+         COALESCE(up.username, '') AS username,
+         COALESCE(up.full_name, '') AS full_name,
+         COALESCE(up.avatar_url, '') AS avatar_url,
+         pv.view_count AS view_count,
+         pv.last_viewed_at AS last_viewed_at,
+         IF(pvr.viewer_user_id IS NOT NULL, 1, 0) AS revealed
+       FROM profile_views pv
+       INNER JOIN users u ON u.id = pv.viewer_user_id AND u.deleted_at IS NULL
+       LEFT JOIN user_profiles up ON up.user_id = pv.viewer_user_id
+       LEFT JOIN profile_view_reveals pvr
+         ON pvr.owner_user_id = pv.owner_user_id AND pvr.viewer_user_id = pv.viewer_user_id
+       LEFT JOIN blocks b1
+         ON b1.blocker_id = ? AND b1.blocked_id = pv.viewer_user_id
+       LEFT JOIN blocks b2
+         ON b2.blocker_id = pv.viewer_user_id AND b2.blocked_id = ?
+       WHERE pv.owner_user_id = ?
+         AND b1.blocked_id IS NULL
+         AND b2.blocker_id IS NULL
+       ORDER BY pv.last_viewed_at DESC
+       LIMIT ? OFFSET ?`,
+      [ownerId, ownerId, ownerId, safeLimit, safeOffset],
+    );
+  }
+
+  async revealProfileViewer(ownerUserId, viewerUserId) {
+    const ownerId = String(ownerUserId || '').trim();
+    const viewerId = String(viewerUserId || '').trim();
+    if (!ownerId || !viewerId) throw new Error('Missing user ids');
+
+    const existing = await query(
+      `SELECT 1 FROM profile_view_reveals WHERE owner_user_id = ? AND viewer_user_id = ? LIMIT 1`,
+      [ownerId, viewerId],
+    );
+    if (existing[0]) return { alreadyRevealed: true };
+
+    const viewer = await query(
+      `SELECT 1 FROM profile_views WHERE owner_user_id = ? AND viewer_user_id = ? LIMIT 1`,
+      [ownerId, viewerId],
+    );
+    if (!viewer[0]) throw new Error('Viewer not found');
+
+    await query(
+      `INSERT INTO profile_view_reveals (owner_user_id, viewer_user_id) VALUES (?, ?)`,
+      [ownerId, viewerId],
+    );
+    return { alreadyRevealed: false };
+  }
+
+  async revealAllProfileViewers(ownerUserId) {
+    const ownerId = String(ownerUserId || '').trim();
+    if (!ownerId) throw new Error('Missing owner id');
+
+    const unrevealed = await query(
+      `SELECT pv.viewer_user_id
+       FROM profile_views pv
+       LEFT JOIN profile_view_reveals pvr
+         ON pvr.owner_user_id = pv.owner_user_id AND pvr.viewer_user_id = pv.viewer_user_id
+       INNER JOIN users u ON u.id = pv.viewer_user_id AND u.deleted_at IS NULL
+       LEFT JOIN blocks b1 ON b1.blocker_id = ? AND b1.blocked_id = pv.viewer_user_id
+       LEFT JOIN blocks b2 ON b2.blocker_id = pv.viewer_user_id AND b2.blocked_id = ?
+       WHERE pv.owner_user_id = ?
+         AND pvr.viewer_user_id IS NULL
+         AND b1.blocked_id IS NULL
+         AND b2.blocker_id IS NULL`,
+      [ownerId, ownerId, ownerId],
+    );
+    if (unrevealed.length === 0) return { count: 0 };
+
+    const values = unrevealed.map((r) => `('${ownerId}', '${r.viewer_user_id}')`).join(',');
+    await query(
+      `INSERT IGNORE INTO profile_view_reveals (owner_user_id, viewer_user_id) VALUES ${values}`,
+    );
+    return { count: unrevealed.length };
   }
 
   async setOnboardingDone(userId, done = true) {

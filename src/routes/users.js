@@ -312,6 +312,9 @@ router.get('/by-username/:username', requireFirebaseAuth, async (req, res, next)
 
     const { profile, viewerId, isSelf, relationship, viewerFollows, blockedByMe, restrictedByMe } =
       resolved;
+    if (!isSelf && !blockedByMe) {
+      await authService.users.recordProfileView(profile.userId, viewerId);
+    }
     const [links, storySummary] = await Promise.all([
       authService.users.listProfileLinks(profile.userId),
       blockedByMe
@@ -339,6 +342,80 @@ router.get('/by-username/:username', requireFirebaseAuth, async (req, res, next)
       success: true,
       data,
     });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /users/me/profile-viewers?limit=50&offset=0
+ * Recently viewed my profile.
+ */
+router.get('/me/profile-viewers', requireFirebaseAuth, async (req, res, next) => {
+  try {
+    const limit = Number(req.query.limit) || 50;
+    const offset = Number(req.query.offset) || 0;
+    const rows = await authService.users.listProfileViewers(req.user.id, {
+      limit,
+      offset,
+    });
+    return res.json({
+      success: true,
+      data: {
+        users: rows.map((item) => ({
+          userId: item.user_id,
+          username: item.username,
+          fullName: item.full_name,
+          avatarUrl: item.avatar_url,
+          viewCount: Number(item.view_count) || 0,
+          lastViewedAt: item.last_viewed_at,
+          revealed: Boolean(Number(item.revealed)),
+        })),
+      },
+    });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+const REVEAL_VIEWER_COIN_COST = 5;
+
+router.post('/me/profile-viewers/reveal', requireFirebaseAuth, async (req, res, next) => {
+  try {
+    const viewerUserId = String(req.body?.viewerUserId || '').trim();
+    if (!viewerUserId) {
+      return res.status(400).json({ success: false, error: 'viewerUserId required' });
+    }
+    const { alreadyRevealed } = await authService.users.revealProfileViewer(req.user.id, viewerUserId);
+    if (!alreadyRevealed) {
+      const coinsBalance = await authService.users.spendCoins(req.user.id, {
+        amount: REVEAL_VIEWER_COIN_COST,
+        reason: 'spend_profile_viewer_reveal',
+        sourceType: 'profile_viewer',
+        sourceId: viewerUserId,
+      });
+      return res.json({ success: true, data: { coinsBalance, coinsSpent: REVEAL_VIEWER_COIN_COST } });
+    }
+    return res.json({ success: true, data: { coinsSpent: 0 } });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.post('/me/profile-viewers/reveal-all', requireFirebaseAuth, async (req, res, next) => {
+  try {
+    const { count } = await authService.users.revealAllProfileViewers(req.user.id);
+    const totalCost = count * REVEAL_VIEWER_COIN_COST;
+    if (totalCost > 0) {
+      const coinsBalance = await authService.users.spendCoins(req.user.id, {
+        amount: totalCost,
+        reason: 'spend_profile_viewer_reveal_all',
+        sourceType: 'profile_viewer',
+        sourceId: 'all',
+      });
+      return res.json({ success: true, data: { coinsBalance, coinsSpent: totalCost, revealedCount: count } });
+    }
+    return res.json({ success: true, data: { coinsSpent: 0, revealedCount: 0 } });
   } catch (err) {
     return next(err);
   }
@@ -938,6 +1015,8 @@ router.delete('/me/restricted/:userId', requireFirebaseAuth, async (req, res, ne
   }
 });
 
+const STICKER_CREATE_COIN_COST = 50;
+
 /**
  * POST /users/me/stickers/generate
  * multipart fields: image, style, title, description
@@ -952,6 +1031,17 @@ router.post(
         return res.status(400).json({
           success: false,
           error: { code: 'MISSING_FILE', message: 'image file is required' },
+        });
+      }
+
+      const balance = await authService.users.getCoinBalance(req.user.id);
+      if (balance < STICKER_CREATE_COIN_COST) {
+        return res.status(402).json({
+          success: false,
+          error: {
+            code: 'INSUFFICIENT_COINS',
+            message: 'Not enough coins',
+          },
         });
       }
 
@@ -982,11 +1072,19 @@ router.post(
         source: 'openai',
       });
 
+      const coinsBalance = await authService.users.spendCoins(req.user.id, {
+        amount: STICKER_CREATE_COIN_COST,
+        reason: 'spend_sticker',
+        sourceType: 'sticker',
+        sourceId: sticker.id,
+      });
+
       logger.info('sticker_generated', {
         userId: req.user.id,
         style,
         title: safeTitle || 'Sticker',
         imageUrl: uploaded.url,
+        coinsSpent: STICKER_CREATE_COIN_COST,
       });
 
       return res.status(201).json({
@@ -999,6 +1097,8 @@ router.post(
             source: sticker.source,
             createdAt: sticker.created_at,
           },
+          coinsBalance,
+          coinsSpent: STICKER_CREATE_COIN_COST,
         },
       });
     } catch (err) {

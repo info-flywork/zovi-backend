@@ -113,12 +113,12 @@ CREATE TABLE IF NOT EXISTS friendship_streaks (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO coin_reward_rules (code, coins, message_key, icon_key, sort_order) VALUES
-  ('first_ever', 100, 'check_in_success_congrats', 'balloon', 10),
-  ('first_at_venue', 5, 'check_in_success_first_at_place', 'location', 20),
+  ('first_ever', 50, 'check_in_success_congrats', 'balloon', 10),
+  ('first_at_venue', 30, 'check_in_success_first_at_place', 'location', 20),
   ('first_among_friends', 5, 'check_in_success_first_friend', 'award', 30),
   ('with_photo', 5, 'check_in_success_great_photo', 'camera', 40),
-  ('explore', 2, 'check_in_success_explore', 'flame', 50),
-  ('with_friend', 2, 'check_in_success_with_friend', 'friends', 60)
+  ('explore', 5, 'check_in_success_explore', 'flame', 50),
+  ('with_friend', 5, 'check_in_success_with_friend', 'friends', 60)
 ON DUPLICATE KEY UPDATE
   coins = VALUES(coins),
   message_key = VALUES(message_key),

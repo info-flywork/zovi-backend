@@ -123,6 +123,12 @@ async function refreshMemberCount(tribeId) {
  * @returns {Promise<{ tribesFormed: number, membersAssigned: number, districtsBackfilled: number }>}
  */
 async function formTribes(options = {}) {
+  // Default tribes are now a fixed global catalogue (see tribeCatalog.js).
+  // District/category auto-formation would recreate local names like
+  // "Kadıköy Kahve Ritüeli" — skip it.
+  if (String(process.env.TRIBE_FORMATION_DISABLED || '1') !== '0') {
+    return { tribesFormed: 0, membersAssigned: 0, districtsBackfilled: 0, skipped: true };
+  }
   // Use `??` per-field so an explicit `undefined` (e.g. unset env override)
   // never clobbers a default — that would send undefined to a SQL bind.
   const cfg = {
