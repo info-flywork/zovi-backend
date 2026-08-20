@@ -5,6 +5,8 @@ const { FollowRepository } = require('./FollowRepository');
 const { UserRepository } = require('./UserRepository');
 const { TribeRepository } = require('./TribeRepository');
 const { NotificationService } = require('./NotificationService');
+const { MockChatService, isMockUserId } = require('./MockChatService');
+const { chatTypingStore } = require('./ChatTypingStore');
 
 class ChatService {
   constructor({
@@ -13,12 +15,16 @@ class ChatService {
     users = new UserRepository(),
     tribes = new TribeRepository(),
     notifications = new NotificationService(),
+    mockChat = null,
+    typing = chatTypingStore,
   } = {}) {
     this.chat = chat;
     this.follows = follows;
     this.users = users;
     this.tribes = tribes;
     this.notifications = notifications;
+    this.typing = typing;
+    this.mockChat = mockChat || new MockChatService({ chatService: this });
   }
 
   _httpError(status, code, message) {
@@ -71,6 +77,40 @@ class ChatService {
       viewerId,
     );
     return this.chat.mapConversationRow(row);
+  }
+
+  async pulseTyping(viewerId, conversationId) {
+    const id = String(conversationId || '').trim();
+    if (!(await this.chat.isMember(id, viewerId))) {
+      throw this._httpError(404, 'NOT_FOUND', 'Conversation not found');
+    }
+    const profile = await this.users.getProfile(viewerId);
+    this.typing.pulse(id, {
+      userId: viewerId,
+      name: profile?.fullName || profile?.username || '',
+      username: profile?.username || '',
+      avatarUrl: profile?.avatarUrl || '',
+    });
+    return { ok: true };
+  }
+
+  async listTyping(viewerId, conversationId) {
+    const id = String(conversationId || '').trim();
+    if (!(await this.chat.isMember(id, viewerId))) {
+      throw this._httpError(404, 'NOT_FOUND', 'Conversation not found');
+    }
+    return {
+      typers: this.typing.list(id, { excludeUserId: viewerId }),
+    };
+  }
+
+  /** Used by mock AI / internal callers. */
+  setTypingPresence(conversationId, user, { ttlMs } = {}) {
+    this.typing.pulse(conversationId, user, { ttlMs });
+  }
+
+  clearTypingPresence(conversationId, userId) {
+    this.typing.clear(conversationId, userId);
   }
 
   async listMessages(viewerId, conversationId, opts) {
@@ -184,6 +224,8 @@ class ChatService {
       replyPreview: replyText,
     });
 
+    this.typing.clear(id, viewerId);
+
     const mapped = this.chat.mapMessageRow(row);
     const isStoryReply =
       replyText === 'story' ||
@@ -213,6 +255,8 @@ class ChatService {
     }
 
     for (const recipientId of others) {
+      // Mock characters have no devices — skip inbox + OneSignal entirely.
+      if (isMockUserId(recipientId)) continue;
       let isRequest = false;
       if (isDm) {
         const recipientRow = await this.chat.getConversationForViewer(
@@ -235,6 +279,20 @@ class ChatService {
           lastMessageAt: mapped?.createdAt || null,
         })
         .catch(() => {});
+    }
+
+    // Mock characters reply like real people (DM + tribe chats).
+    try {
+      this.mockChat.maybeAutoReply({
+        conversationId: id,
+        senderId: viewerId,
+        isDm,
+        peerIds: others,
+        inboundType: safeType,
+        inboundBody: text,
+      });
+    } catch (_) {
+      // never block the sender path
     }
 
     return mapped;

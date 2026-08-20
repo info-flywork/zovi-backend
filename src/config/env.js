@@ -34,6 +34,13 @@ const env = {
   },
   openai: {
     apiKey: process.env.OPENAI_API_KEY || '',
+    chatModel: process.env.OPENAI_CHAT_MODEL || 'gpt-4o-mini',
+    ttsModel: process.env.OPENAI_TTS_MODEL || 'gpt-4o-mini-tts',
+  },
+  elevenLabs: {
+    apiKey: process.env.ELEVENLABS_API_KEY || '',
+    voiceId: process.env.ELEVENLABS_VOICE_ID || '',
+    modelId: process.env.ELEVENLABS_MODEL_ID || 'eleven_multilingual_v2',
   },
   suno: {
     apiKey: process.env.SUNO_API_KEY || '',
@@ -54,6 +61,12 @@ const env = {
   },
   googlePlaces: {
     apiKey: process.env.GOOGLE_PLACES_API_KEY || '',
+  },
+  revenueCat: {
+    webhookAuth:
+      process.env.REVENUECAT_WEBHOOK_AUTH ||
+      process.env.REVENUECAT_WEBHOOK_SECRET ||
+      '',
   },
 };
 

@@ -80,10 +80,10 @@ router.get('/nearby', requireFirebaseAuth, async (req, res, next) => {
     const filter = String(req.query.filter || 'friends').toLowerCase();
     const radiusKm = Math.min(
       Math.max(Number(req.query.radiusKm) || 50, 1),
-      200,
+      20000,
     );
     const radiusMeters = radiusKm * 1000;
-    const limit = Math.min(Math.max(Number(req.query.limit) || 80, 1), 120);
+    const limit = Math.min(Math.max(Number(req.query.limit) || 80, 1), 250);
     const cacheFilter =
       filter === 'anon' || filter === 'nearby' ? 'anon' : 'friends';
     const key = mapNearbyKey({

@@ -253,6 +253,40 @@ router.post(
 );
 
 /**
+ * GET /chat/conversations/:id/typing
+ * Who is currently typing (excludes the viewer).
+ */
+router.get(
+  '/conversations/:id/typing',
+  requireFirebaseAuth,
+  async (req, res, next) => {
+    try {
+      const data = await chatService.listTyping(req.user.id, req.params.id);
+      return res.json({ success: true, data });
+    } catch (err) {
+      return handleServiceError(err, res, next);
+    }
+  },
+);
+
+/**
+ * POST /chat/conversations/:id/typing
+ * Heartbeat while the viewer is composing.
+ */
+router.post(
+  '/conversations/:id/typing',
+  requireFirebaseAuth,
+  async (req, res, next) => {
+    try {
+      const data = await chatService.pulseTyping(req.user.id, req.params.id);
+      return res.json({ success: true, data });
+    } catch (err) {
+      return handleServiceError(err, res, next);
+    }
+  },
+);
+
+/**
  * POST /chat/conversations/:id/messages  { type, body, mediaUrl }
  */
 router.post(

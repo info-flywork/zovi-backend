@@ -24,9 +24,13 @@ const { logger } = require('../utils/logger');
 const {
   publicProfileCache,
   publicProfileKey,
+  publicProfileByIdKey,
+  profileViewersCache,
+  profileViewersKey,
   invalidateUser,
   invalidateUsername,
   invalidateStoryFeeds,
+  invalidateProfileViewers,
 } = require('../cache/appCache');
 
 const router = express.Router();
@@ -84,21 +88,7 @@ function extensionForMime(mime) {
   }
 }
 
-/**
- * Resolve a username for a viewer with block + account-privacy gates.
- * Sends the error response and returns null on failure.
- */
-async function resolveVisibleProfileOrRespond(req, res, usernameParam) {
-  const normalized = normalizeUsername(usernameParam);
-  if (!normalized) {
-    res.status(400).json({
-      success: false,
-      error: { code: 'INVALID_USERNAME', message: 'Invalid username' },
-    });
-    return null;
-  }
-
-  const profile = await authService.users.findProfileByUsername(normalized);
+async function resolveVisibleProfileForViewer(req, res, profile) {
   if (!profile) {
     res.status(404).json({
       success: false,
@@ -125,7 +115,6 @@ async function resolveVisibleProfileOrRespond(req, res, usernameParam) {
       authService.users.isRestrictedBy(viewerId, profile.userId),
       followRepository.getRelationship(viewerId, profile.userId),
     ]);
-    // They blocked me → invisible.
     if (theyBlockedMe) {
       res.status(404).json({
         success: false,
@@ -154,6 +143,55 @@ async function resolveVisibleProfileOrRespond(req, res, usernameParam) {
     viewerFollows: true,
     blockedByMe: false,
     restrictedByMe: false,
+  };
+}
+
+/**
+ * Resolve a username for a viewer with block + account-privacy gates.
+ * Sends the error response and returns null on failure.
+ */
+async function resolveVisibleProfileOrRespond(req, res, usernameParam) {
+  const normalized = normalizeUsername(usernameParam);
+  if (!normalized) {
+    res.status(400).json({
+      success: false,
+      error: { code: 'INVALID_USERNAME', message: 'Invalid username' },
+    });
+    return null;
+  }
+
+  const profile = await authService.users.findProfileByUsername(normalized);
+  return resolveVisibleProfileForViewer(req, res, profile);
+}
+
+async function buildPublicProfilePayload(req, resolved) {
+  const { profile, viewerId, isSelf, relationship, viewerFollows, blockedByMe, restrictedByMe } =
+    resolved;
+  if (!isSelf && !blockedByMe) {
+    await authService.users.recordProfileView(profile.userId, viewerId);
+    invalidateProfileViewers(profile.userId);
+  }
+  const [links, storySummary] = await Promise.all([
+    authService.users.listProfileLinks(profile.userId),
+    blockedByMe
+      ? Promise.resolve({ hasStory: false, isViewed: true })
+      : storyRepository.getFeedSummaryForUser(profile.userId, viewerId, {
+          viewerFollows: isSelf ? true : viewerFollows,
+        }),
+  ]);
+
+  return {
+    profile: {
+      ...profile.toJSON(),
+      isSelf,
+      isFollowing: relationship.following,
+      relationship,
+      hasActiveStory: storySummary.hasStory,
+      storyIsViewed: storySummary.isViewed,
+      blockedByMe: Boolean(blockedByMe),
+      restrictedByMe: Boolean(restrictedByMe),
+    },
+    links: blockedByMe ? [] : links.map((l) => l.toJSON()),
   };
 }
 
@@ -310,33 +348,42 @@ router.get('/by-username/:username', requireFirebaseAuth, async (req, res, next)
     );
     if (!resolved) return undefined;
 
-    const { profile, viewerId, isSelf, relationship, viewerFollows, blockedByMe, restrictedByMe } =
-      resolved;
-    if (!isSelf && !blockedByMe) {
-      await authService.users.recordProfileView(profile.userId, viewerId);
-    }
-    const [links, storySummary] = await Promise.all([
-      authService.users.listProfileLinks(profile.userId),
-      blockedByMe
-        ? Promise.resolve({ hasStory: false, isViewed: true })
-        : storyRepository.getFeedSummaryForUser(profile.userId, viewerId, {
-            viewerFollows: isSelf ? true : viewerFollows,
-          }),
-    ]);
+    const data = await buildPublicProfilePayload(req, resolved);
+    publicProfileCache.set(cacheKey, data);
+    return res.json({
+      success: true,
+      data,
+    });
+  } catch (err) {
+    return next(err);
+  }
+});
 
-    const data = {
-      profile: {
-        ...profile.toJSON(),
-        isSelf,
-        isFollowing: relationship.following,
-        relationship,
-        hasActiveStory: storySummary.hasStory,
-        storyIsViewed: storySummary.isViewed,
-        blockedByMe: Boolean(blockedByMe),
-        restrictedByMe: Boolean(restrictedByMe),
-      },
-      links: blockedByMe ? [] : links.map((l) => l.toJSON()),
-    };
+/**
+ * GET /users/by-id/:userId
+ * Public profile lookup when username is hidden (e.g. anonymous map pins).
+ */
+router.get('/by-id/:userId', requireFirebaseAuth, async (req, res, next) => {
+  try {
+    const userId = String(req.params.userId || '').trim();
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'MISSING_USER_ID', message: 'userId is required' },
+      });
+    }
+
+    const cacheKey = publicProfileByIdKey(req.user.id, userId);
+    const cached = publicProfileCache.get(cacheKey);
+    if (cached !== undefined) {
+      return res.json({ success: true, data: cached });
+    }
+
+    const profile = await authService.users.getProfile(userId);
+    const resolved = await resolveVisibleProfileForViewer(req, res, profile);
+    if (!resolved) return undefined;
+
+    const data = await buildPublicProfilePayload(req, resolved);
     publicProfileCache.set(cacheKey, data);
     return res.json({
       success: true,
@@ -355,23 +402,25 @@ router.get('/me/profile-viewers', requireFirebaseAuth, async (req, res, next) =>
   try {
     const limit = Number(req.query.limit) || 50;
     const offset = Number(req.query.offset) || 0;
-    const rows = await authService.users.listProfileViewers(req.user.id, {
-      limit,
-      offset,
+    const key = profileViewersKey(req.user.id, { limit, offset });
+    const users = await profileViewersCache.getOrSet(key, async () => {
+      const rows = await authService.users.listProfileViewers(req.user.id, {
+        limit,
+        offset,
+      });
+      return rows.map((item) => ({
+        userId: item.user_id,
+        username: item.username,
+        fullName: item.full_name,
+        avatarUrl: item.avatar_url,
+        viewCount: Number(item.view_count) || 0,
+        lastViewedAt: item.last_viewed_at,
+        revealed: Boolean(Number(item.revealed)),
+      }));
     });
     return res.json({
       success: true,
-      data: {
-        users: rows.map((item) => ({
-          userId: item.user_id,
-          username: item.username,
-          fullName: item.full_name,
-          avatarUrl: item.avatar_url,
-          viewCount: Number(item.view_count) || 0,
-          lastViewedAt: item.last_viewed_at,
-          revealed: Boolean(Number(item.revealed)),
-        })),
-      },
+      data: { users },
     });
   } catch (err) {
     return next(err);
@@ -387,6 +436,7 @@ router.post('/me/profile-viewers/reveal', requireFirebaseAuth, async (req, res, 
       return res.status(400).json({ success: false, error: 'viewerUserId required' });
     }
     const { alreadyRevealed } = await authService.users.revealProfileViewer(req.user.id, viewerUserId);
+    invalidateProfileViewers(req.user.id);
     if (!alreadyRevealed) {
       const coinsBalance = await authService.users.spendCoins(req.user.id, {
         amount: REVEAL_VIEWER_COIN_COST,
@@ -405,6 +455,7 @@ router.post('/me/profile-viewers/reveal', requireFirebaseAuth, async (req, res, 
 router.post('/me/profile-viewers/reveal-all', requireFirebaseAuth, async (req, res, next) => {
   try {
     const { count } = await authService.users.revealAllProfileViewers(req.user.id);
+    invalidateProfileViewers(req.user.id);
     const totalCost = count * REVEAL_VIEWER_COIN_COST;
     if (totalCost > 0) {
       const coinsBalance = await authService.users.spendCoins(req.user.id, {

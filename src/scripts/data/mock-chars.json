@@ -1,0 +1,1752 @@
+[
+  {
+    "name": "Kiara Nakamura-Lee",
+    "gender": "Kadın",
+    "age": 37,
+    "race": "Karışık Irk (Multiracial)",
+    "traits": "average build, curly dark brown saç, hazel göz, warm medium tan ten tonu, a subtle nose piercing, energetic ifade"
+  },
+  {
+    "name": "Serkan Demir",
+    "gender": "Erkek",
+    "age": 26,
+    "race": "Türk / Anadolu",
+    "traits": "lean build, black straight saç, amber göz, warm olive ten tonu, short well-groomed beard, strong ifade"
+  },
+  {
+    "name": "Camille Jefferson",
+    "gender": "Kadın",
+    "age": 33,
+    "race": "Afro-Amerikan",
+    "traits": "average build, locs saç, dark brown göz, rich brown to caramel ten tonu, a subtle nose piercing, creative ifade"
+  },
+  {
+    "name": "Erik Eriksson",
+    "gender": "Erkek",
+    "age": 26,
+    "race": "Kuzey Avrupalı (İskandinav)",
+    "traits": "athletic build, ash blonde saç, ice blue göz, fair, rosy-toned ten tonu, a rounded soft face, calm ifade"
+  },
+  {
+    "name": "Jun-ho Tanaka",
+    "gender": "Erkek",
+    "age": 19,
+    "race": "Doğu Asyalı (Çin/Kore/Japon)",
+    "traits": "average build, jet black bob saç, dark brown göz, fair to light beige ten tonu, a rounded soft face, quietly intense expression ifade"
+  },
+  {
+    "name": "Xin Kim",
+    "gender": "Erkek",
+    "age": 44,
+    "race": "Doğu Asyalı (Çin/Kore/Japon)",
+    "traits": "slim build, jet black bob saç, black göz, fair to light beige ten tonu, a rounded soft face, self-confident ifade"
+  },
+  {
+    "name": "Trang Chaiyasit",
+    "gender": "Kadın",
+    "age": 26,
+    "race": "Güneydoğu Asyalı",
+    "traits": "petite build, black glossy saç, black göz, warm golden tan ten tonu, sharp angular features, calm ifade"
+  },
+  {
+    "name": "Trevon Ellis",
+    "gender": "Erkek",
+    "age": 37,
+    "race": "Afro-Amerikan",
+    "traits": "average build, natural curls saç, black göz, rich brown to caramel ten tonu, a warm dimpled smile, quietly intense expression ifade"
+  },
+  {
+    "name": "Fredrik Holm",
+    "gender": "Erkek",
+    "age": 37,
+    "race": "Kuzey Avrupalı (İskandinav)",
+    "traits": "athletic build, light brown saç, sea green göz, fair, rosy-toned ten tonu, soft freckles across the nose, gentle ifade"
+  },
+  {
+    "name": "Tomas Fernandez",
+    "gender": "Erkek",
+    "age": 42,
+    "race": "Latin Amerikalı",
+    "traits": "lean build, chestnut curly saç, dark brown göz, warm tan to golden brown ten tonu, naturally arched brows, playful ifade"
+  },
+  {
+    "name": "Aisha Iyer",
+    "gender": "Kadın",
+    "age": 48,
+    "race": "Güney Asyalı (Hint alt kıtası)",
+    "traits": "athletic build, dark brown curly saç, dark brown göz, warm brown ten tonu, a small beauty mark near the lip, gentle ifade"
+  },
+  {
+    "name": "Kwabena Mbeki",
+    "gender": "Erkek",
+    "age": 27,
+    "race": "Sahra Altı Afrikalı",
+    "traits": "lean build, tight natural curls saç, dark brown göz, deep rich brown ten tonu, a bright genuine smile, professional composed posture ifade"
+  },
+  {
+    "name": "Roxie Bellamy",
+    "gender": "Kadın",
+    "age": 27,
+    "race": "Beyaz Amerikalı (Orta Batı kökenli)",
+    "traits": "ortalama yapı, kızıl-turuncu dalgalı uzun saç, açık ten, dramatik renkli sahne makyajı, iri yuvarlak göz, oyunbaz-teatral ifade"
+  },
+  {
+    "name": "Amadou Abara",
+    "gender": "Erkek",
+    "age": 49,
+    "race": "Sahra Altı Afrikalı",
+    "traits": "athletic build, braided saç, dark brown göz, deep rich brown ten tonu, high cheekbones, quietly intense expression ifade"
+  },
+  {
+    "name": "Aiperi Serikov",
+    "gender": "Kadın",
+    "age": 21,
+    "race": "Orta Asyalı (Türki/Moğol)",
+    "traits": "slender build, dark brown saç, black göz, warm beige with golden undertone ten tonu, a strong jawline, calm ifade"
+  },
+  {
+    "name": "Bahtiyar Tashkentov",
+    "gender": "Erkek",
+    "age": 24,
+    "race": "Orta Asyalı (Türki/Moğol)",
+    "traits": "lean build, straight black saç, hazel göz, warm beige with golden undertone ten tonu, a bright genuine smile, relaxed ifade"
+  },
+  {
+    "name": "Ravi Santos",
+    "gender": "Erkek",
+    "age": 30,
+    "race": "Güneydoğu Asyalı",
+    "traits": "lean build, black glossy saç, black göz, warm golden tan ten tonu, short well-groomed beard, friendly approachable demeanor ifade"
+  },
+  {
+    "name": "Alicia Harmon",
+    "gender": "Kadın",
+    "age": 36,
+    "race": "Afro-Amerikan",
+    "traits": "curvy build, locs saç, dark brown göz, rich brown to caramel ten tonu, a rounded soft face, serious ifade"
+  },
+  {
+    "name": "Sage Marlowe",
+    "gender": "Kadın",
+    "age": 29,
+    "race": "Beyaz Amerikalı",
+    "traits": "ortalama yapı, doğal dalgalı kumral saç, güneşte yanmış ten, katmanlı yüzük/kolye/küpe takıları, doğal-bohem tarz, sıcak topraksı enerji"
+  },
+  {
+    "name": "Tanya Brooks",
+    "gender": "Kadın",
+    "age": 31,
+    "race": "Afro-Amerikan",
+    "traits": "atletik güçlü yapı, kısa fade saç kesimi, koyu kahverengi ten, kendinden emin dik duruş, sokak modası tarzı, karizmatik dominant ifade"
+  },
+  {
+    "name": "Milo Chen",
+    "gender": "Erkek",
+    "age": 22,
+    "race": "Doğu Asyalı",
+    "traits": "ince zayıf yapı, yumuşak androjen yüz hatları, orta boy hafif dalgalı siyah saç, açık ten, hafif göz makyajı, pastel/çiçekli tarz giyim"
+  },
+  {
+    "name": "Ash Kowalski",
+    "gender": "Belirtilmemiş / Non-binary",
+    "age": 26,
+    "race": "Doğu Avrupalı (Slav)",
+    "traits": "ince orta yapı, kısa üstü uzun yanları kısa saç modeli, keskin çene hattı ile yumuşak göz ifadesi karışımı, nötr tonlarda minimalist giyim"
+  },
+  {
+    "name": "Marco Ricci",
+    "gender": "Erkek",
+    "age": 25,
+    "race": "Güney Avrupalı (Akdeniz)",
+    "traits": "athletic build, dark brown wavy saç, dark brown göz, olive-toned ten tonu, a bright genuine smile, professional composed posture ifade"
+  },
+  {
+    "name": "Malik Diallo-Rossi",
+    "gender": "Erkek",
+    "age": 22,
+    "race": "Karışık Irk (Multiracial)",
+    "traits": "athletic build, wavy black-brown saç, amber green göz, warm medium tan ten tonu, a rounded soft face, relaxed ifade"
+  },
+  {
+    "name": "Devon Reyes",
+    "gender": "Kadın",
+    "age": 30,
+    "race": "Latin Amerikalı",
+    "traits": "kaslı atletik yapı, kısa siyah saç, koyu ten tonu, görünür kol dövmeleri, güçlü omuzlar, kendinden emin sportif duruş"
+  },
+  {
+    "name": "Clara Whitfield",
+    "gender": "Kadın",
+    "age": 27,
+    "race": "Beyaz Avrupalı",
+    "traits": "ince zarif yapı, uzun dalgalı kızıl saç, açık ten ve çil izleri, yumuşak feminen makyaj, çiçekli/zarif giyim tarzı"
+  },
+  {
+    "name": "Arjun Mehta",
+    "gender": "Erkek",
+    "age": 22,
+    "race": "Güney Asyalı (Hint)",
+    "traits": "ince zayıf yapı, yumuşak feminen yüz hatları, siyah dalgalı orta boy saç, sıcak kahverengi ten, hafif göz kalemi, şık androjen tarz giyim"
+  },
+  {
+    "name": "Nadia Reyes",
+    "gender": "Kadın",
+    "age": 38,
+    "race": "Güneydoğu Asyalı",
+    "traits": "slender build, black straight saç, dark brown göz, warm golden tan ten tonu, a warm dimpled smile, professional composed posture ifade"
+  },
+  {
+    "name": "Latoya Harmon",
+    "gender": "Kadın",
+    "age": 50,
+    "race": "Afro-Amerikan",
+    "traits": "athletic build, natural curls saç, dark brown göz, rich brown to caramel ten tonu, a subtle nose piercing, professional composed posture ifade"
+  },
+  {
+    "name": "Alice Evans",
+    "gender": "Kadın",
+    "age": 31,
+    "race": "Batı Avrupalı (Anglo/Cermen)",
+    "traits": "athletic build, auburn saç, grey-green göz, fair with light freckling ten tonu, a warm dimpled smile, professional composed posture ifade"
+  },
+  {
+    "name": "Theo Marsh",
+    "gender": "Erkek (Trans erkek)",
+    "age": 27,
+    "race": "Beyaz Amerikalı",
+    "traits": "ortalama atletik yapı, kısa kahverengi saç, açık ten, hafif sakal izi, kendinden emin sıcak ifade"
+  },
+  {
+    "name": "Vivian Cortez",
+    "gender": "Kadın (Trans kadın)",
+    "age": 30,
+    "race": "Latin Amerikalı",
+    "traits": "ince zarif yapı, uzun dalgalı siyah saç, sıcak ten tonu, zarif makyaj, şık modern giyim"
+  },
+  {
+    "name": "Robin Achterberg",
+    "gender": "Genderfluid",
+    "age": 24,
+    "race": "Beyaz Avrupalı",
+    "traits": "ince yapı, günden güne değişen tarz - o an kısa renkli saç, açık ten, karma feminen-maskülen giysi katmanları, oyunbaz ifade"
+  },
+  {
+    "name": "Olumide Kamau",
+    "gender": "Erkek",
+    "age": 54,
+    "race": "Sahra Altı Afrikalı",
+    "traits": "slim build, afro saç, black göz, deep rich brown ten tonu, a small beauty mark near the lip, friendly approachable demeanor ifade"
+  },
+  {
+    "name": "Kenji Park",
+    "gender": "Erkek",
+    "age": 23,
+    "race": "Doğu Asyalı (Çin/Kore/Japon)",
+    "traits": "broad-shouldered build, straight black saç, dark brown göz, fair to light beige ten tonu, high cheekbones, professional composed posture ifade"
+  },
+  {
+    "name": "Frankie Diaz",
+    "gender": "Erkek (Drag king performansı)",
+    "age": 33,
+    "race": "Latin Amerikalı",
+    "traits": "ortalama yapı, çizilmiş sahte bıyık/sakal makyajı, slick geriye taranmış saç, şık takım elbise, sahne karizması"
+  },
+  {
+    "name": "Nadia Farouk",
+    "gender": "Kadın (Queer, hijablı)",
+    "age": 26,
+    "race": "Arap / Orta Doğulu",
+    "traits": "ince yapı, zarif renkli hijab, sıcak zeytin ten tonu, ifadeli koyu göz, modern mütevazı şık giyim"
+  },
+  {
+    "name": "Otto Redfeather",
+    "gender": "Erkek (İki-Ruhlu / Two-Spirit)",
+    "age": 38,
+    "race": "Yerli Amerikan",
+    "traits": "orta yapı, uzun siyah örgülü saç, bakır ten tonu, geleneksel ve modern giyim karışımı, sakin dengeli duruş"
+  },
+  {
+    "name": "Ohanzee Little Elk",
+    "gender": "Erkek",
+    "age": 38,
+    "race": "Yerli Amerikan (Native)",
+    "traits": "athletic build, long straight black saç, black göz, warm copper brown ten tonu, a warm dimpled smile, gentle ifade"
+  },
+  {
+    "name": "Rebecca Hughes",
+    "gender": "Kadın",
+    "age": 36,
+    "race": "Batı Avrupalı (Anglo/Cermen)",
+    "traits": "average build, sandy blonde saç, grey-green göz, fair with light freckling ten tonu, a bright genuine smile, curious ifade"
+  },
+  {
+    "name": "Altynai Dzhaksybekov",
+    "gender": "Kadın",
+    "age": 48,
+    "race": "Orta Asyalı (Türki/Moğol)",
+    "traits": "slender build, straight black saç, dark brown göz, warm beige with golden undertone ten tonu, soft freckles across the nose, friendly approachable dem"
+  },
+  {
+    "name": "Isha Ahmed",
+    "gender": "Kadın",
+    "age": 26,
+    "race": "Güney Asyalı (Hint alt kıtası)",
+    "traits": "curvy build, dark brown curly saç, dark brown göz, warm brown ten tonu, naturally arched brows, playful ifade"
+  },
+  {
+    "name": "Marco Costa",
+    "gender": "Erkek",
+    "age": 53,
+    "race": "Güney Avrupalı (Akdeniz)",
+    "traits": "lean build, dark brown wavy saç, dark brown göz, olive-toned ten tonu, short well-groomed beard, focused ifade"
+  },
+  {
+    "name": "Nabil Khalil",
+    "gender": "Erkek",
+    "age": 26,
+    "race": "Arap / Kuzey Afrika (MENA)",
+    "traits": "lean build, dark brown curly saç, dark brown göz, warm tan to deep olive ten tonu, sharp angular features, strong ifade"
+  },
+  {
+    "name": "Raven Ashworth",
+    "gender": "Kadın",
+    "age": 28,
+    "race": "Beyaz Amerikalı",
+    "traits": "ince yapı, dümdüz uzun siyah saç, çok açık/solgun ten, dramatik koyu göz makyajı, Victoria dönemi esintili siyah kıyafetler"
+  },
+  {
+    "name": "Sid Malone",
+    "gender": "Kadın",
+    "age": 25,
+    "race": "Beyaz Amerikalı",
+    "traits": "ince atletik yapı, yanları kazınmış rengarenk saç, çok sayıda piercing, deri ceket, isyankar özgür ifade"
+  },
+  {
+    "name": "Jax Ferro",
+    "gender": "Erkek",
+    "age": 29,
+    "race": "Beyaz Avrupalı",
+    "traits": "ince yapı, sivri dikenli saç modeli, piercingler, kol dövmeleri, deri ceket, isyankar tavır"
+  },
+  {
+    "name": "Zhambyl Dzhaksybekov",
+    "gender": "Erkek",
+    "age": 45,
+    "race": "Orta Asyalı (Türki/Moğol)",
+    "traits": "broad-shouldered build, straight black saç, dark brown göz, warm beige with golden undertone ten tonu, soft freckles across the nose, strong ifade"
+  },
+  {
+    "name": "Sanjay Khan",
+    "gender": "Erkek",
+    "age": 33,
+    "race": "Güney Asyalı (Hint alt kıtası)",
+    "traits": "slim build, dark brown curly saç, dark brown göz, warm brown ten tonu, a small beauty mark near the lip, creative ifade"
+  },
+  {
+    "name": "Bianca Garcia",
+    "gender": "Kadın",
+    "age": 40,
+    "race": "Güney Avrupalı (Akdeniz)",
+    "traits": "curvy build, chestnut saç, dark brown göz, olive-toned ten tonu, a warm dimpled smile, self-confident ifade"
+  },
+  {
+    "name": "Yusuf Aydın",
+    "gender": "Erkek",
+    "age": 55,
+    "race": "Türk / Anadolu",
+    "traits": "athletic build, black straight saç, hazel göz, warm olive ten tonu, a strong jawline, focused ifade"
+  },
+  {
+    "name": "Klara Eriksson",
+    "gender": "Kadın",
+    "age": 39,
+    "race": "Kuzey Avrupalı (İskandinav)",
+    "traits": "petite build, platinum blonde saç, ice blue göz, fair, rosy-toned ten tonu, a bright genuine smile, gentle ifade"
+  },
+  {
+    "name": "Bianca Delure",
+    "gender": "Erkek (drag performansı)",
+    "age": 34,
+    "race": "Karışık Irk",
+    "traits": "uzun boylu, abartılı dramatik makyaj, renkli peruk, ışıltılı gösteri kıyafeti, sahne karizması"
+  },
+  {
+    "name": "Imani Carter",
+    "gender": "Kadın",
+    "age": 26,
+    "race": "Afro-Amerikan",
+    "traits": "ince zarif yapı, doğal örgülü/kıvırcık saç, koyu kahverengi ten, yumuşak feminen tarz, zarif takılar"
+  },
+  {
+    "name": "Nova Simmons",
+    "gender": "Kadın",
+    "age": 24,
+    "race": "Karışık Irk",
+    "traits": "ince yapı, canlı pembe saç, açık-orta ten tonu, alternatif tarz giyim, oyunbaz ifade"
+  },
+  {
+    "name": "Wren Oakley",
+    "gender": "Kadın",
+    "age": 25,
+    "race": "Beyaz Amerikalı",
+    "traits": "ince yapı, canlı mavi saç, açık ten, alternatif tarz giyim, sakin özgüvenli ifade"
+  },
+  {
+    "name": "Eli Foster",
+    "gender": "Erkek",
+    "age": 23,
+    "race": "Beyaz Amerikalı",
+    "traits": "ince zayıf gençlik yapısı, düzgün bakımlı kısa saç, pürüzsüz ten, şık genç tarz giyim, canlı gülümseme"
+  },
+  {
+    "name": "Gus Bennett",
+    "gender": "Erkek",
+    "age": 42,
+    "race": "Beyaz Amerikalı",
+    "traits": "iri gösterişli yapı, gür sakal, vücut kılları görünür, sıcak ten tonu, rahat flanel tarz giyim, sıcak samimi ifade"
+  },
+  {
+    "name": "Monique Jackson",
+    "gender": "Kadın",
+    "age": 51,
+    "race": "Afro-Amerikan",
+    "traits": "curvy build, natural curls saç, black göz, rich brown to caramel ten tonu, expressive eyebrows, friendly approachable demeanor ifade"
+  },
+  {
+    "name": "Alice Smith",
+    "gender": "Kadın",
+    "age": 23,
+    "race": "Batı Avrupalı (Anglo/Cermen)",
+    "traits": "slender build, sandy blonde saç, hazel göz, fair with light freckling ten tonu, soft freckles across the nose, creative ifade"
+  },
+  {
+    "name": "Jasmine Washington",
+    "gender": "Kadın",
+    "age": 50,
+    "race": "Afro-Amerikan",
+    "traits": "athletic build, braids saç, dark brown göz, rich brown to caramel ten tonu, a warm dimpled smile, playful ifade"
+  },
+  {
+    "name": "Chidi Nkosi",
+    "gender": "Erkek",
+    "age": 33,
+    "race": "Sahra Altı Afrikalı",
+    "traits": "lean build, braided saç, dark brown göz, deep rich brown ten tonu, a light stubble beard, serious ifade"
+  },
+  {
+    "name": "Fernando Ramirez",
+    "gender": "Erkek",
+    "age": 28,
+    "race": "Latin Amerikalı",
+    "traits": "slim build, dark brown wavy saç, dark brown göz, warm tan to golden brown ten tonu, a small beauty mark near the lip, curious ifade"
+  },
+  {
+    "name": "Rain Kowalczyk",
+    "gender": "Androjen",
+    "age": 24,
+    "race": "Beyaz Avrupalı (Slav)",
+    "traits": "ince orta yapı, kısa üstü uzun yanları kısa saç, keskin elmacık kemikleri ile yumuşak dudak hattı karışımı, nötr minimalist giyim"
+  },
+  {
+    "name": "Peggy Lindqvist",
+    "gender": "Kadın (Butch lezbiyen, yaşlı)",
+    "age": 61,
+    "race": "İskandinav",
+    "traits": "iri sağlam yapı, kısa gri saç, açık ten, derin yüz çizgileri, kendinden emin sakin ifade"
+  },
+  {
+    "name": "Warren Ashby",
+    "gender": "Erkek (Gey, 'silver fox')",
+    "age": 55,
+    "race": "Beyaz Amerikalı",
+    "traits": "orta yapı, kısa gümüş-gri saç, düzgün bakımlı gri sakal, açık ten, olgun karizmatik ifade"
+  },
+  {
+    "name": "Marisol Nguyen",
+    "gender": "Kadın (Chapstick lezbiyen)",
+    "age": 25,
+    "race": "Karışık Irk (Vietnam/Latin)",
+    "traits": "ince yapı, düz siyah saç, sıcak ten tonu, doğal minimal makyaj, rahat gündelik-şık tarz"
+  },
+  {
+    "name": "Benji Okoro",
+    "gender": "Erkek (Gey, dolgun/plus-size)",
+    "age": 29,
+    "race": "Sahra Altı Afrikalı",
+    "traits": "iri dolgun yapı, kısa kıvırcık saç, koyu kahverengi ten, sıcak geniş gülümseme, rahat şık giyim"
+  },
+  {
+    "name": "Mila Petrenko",
+    "gender": "Kadın (E-girl)",
+    "age": 20,
+    "race": "Doğu Avrupalı (Ukraynalı)",
+    "traits": "ince yapı, çift renkli (siyah-pembe) düz saç, açık ten, yanaklarda kalp/çizgi bluş makyajı, oversize hoodie tarzı"
+  },
+  {
+    "name": "Dante Ruiz",
+    "gender": "Erkek (E-boy)",
+    "age": 21,
+    "race": "Latin Amerikalı (Meksikalı)",
+    "traits": "ince yapı, orta boy düz siyah saç ortadan ayrılmış, sıcak ten tonu, hafif göz altı çizgisi, kargo pantolon ve zincir tarzı"
+  },
+  {
+    "name": "Sunmi Cho",
+    "gender": "Androjen",
+    "age": 27,
+    "race": "Doğu Asyalı (Kore)",
+    "traits": "ince yapı, düz siyah bob kesim saç, açık ten, keskin çene hattı ile büyük ifadeli göz karışımı, yüksek moda androjen giyim"
+  },
+  {
+    "name": "Alva Lindqvist",
+    "gender": "Kadın",
+    "age": 36,
+    "race": "Kuzey Avrupalı (İskandinav)",
+    "traits": "athletic build, ash blonde saç, sea green göz, fair, rosy-toned ten tonu, expressive eyebrows, relaxed ifade"
+  },
+  {
+    "name": "Leotie Standingbear",
+    "gender": "Kadın",
+    "age": 55,
+    "race": "Yerli Amerikan (Native)",
+    "traits": "petite build, dark brown braided saç, black göz, warm copper brown ten tonu, a warm dimpled smile, professional composed posture ifade"
+  },
+  {
+    "name": "Van Sukarno",
+    "gender": "Erkek",
+    "age": 49,
+    "race": "Güneydoğu Asyalı",
+    "traits": "average build, black glossy saç, black göz, warm golden tan ten tonu, a strong jawline, energetic ifade"
+  },
+  {
+    "name": "Holly Ferreira",
+    "gender": "Kadın (Biseksüel)",
+    "age": 27,
+    "race": "Karışık Irk (Portekizli/Filipinli)",
+    "traits": "ortalama yapı, dalgalı kahverengi omuz boyu saç, sıcak ten tonu, sıcak samimi gülümseme, rahat gündelik şık giyim"
+  },
+  {
+    "name": "Skyler Voss",
+    "gender": "Non-binary (Panseksüel)",
+    "age": 25,
+    "race": "Beyaz Amerikalı",
+    "traits": "ince yapı, kısa renkli saç, açık ten, oyunbaz eklektik giyim tarzı, canlı ifadeli göz"
+  },
+  {
+    "name": "Zion Okafor",
+    "gender": "Androjen",
+    "age": 22,
+    "race": "Sahra Altı Afrikalı",
+    "traits": "ince uzun yapı, kısa doğal saç, koyu kahverengi ten, yüksek elmacık kemikleri, streetwear androjen tarz"
+  },
+  {
+    "name": "Axel Thornton",
+    "gender": "Erkek (Metalhead)",
+    "age": 33,
+    "race": "Beyaz Amerikalı",
+    "traits": "iri yapı, uzun düz siyah saç, açık ten, kol dövmeleri, bant tişört ve deri bilezik tarzı"
+  },
+  {
+    "name": "Peyton Marsh",
+    "gender": "Kadın (Scene kid)",
+    "age": 19,
+    "race": "Beyaz Amerikalı",
+    "traits": "ince yapı, teasing edilmiş çok renkli saç, açık ten, kalın göz kalemi, neon renkli katmanlı giyim"
+  },
+  {
+    "name": "Isi Whitehorse",
+    "gender": "Kadın",
+    "age": 38,
+    "race": "Yerli Amerikan (Native)",
+    "traits": "athletic build, dark brown braided saç, dark brown göz, warm copper brown ten tonu, expressive eyebrows, self-confident ifade"
+  },
+  {
+    "name": "Manoa Faleolo",
+    "gender": "Erkek",
+    "age": 28,
+    "race": "Pasifik Adalı",
+    "traits": "slim build, thick black wavy saç, dark brown göz, deep warm bronze ten tonu, high cheekbones, playful ifade"
+  },
+  {
+    "name": "Iris Bengtsson",
+    "gender": "Kadın (Aseksüel)",
+    "age": 30,
+    "race": "İskandinav",
+    "traits": "ince yapı, düz açık sarı saç, açık ten, sakin dingin ifade, minimalist zarif giyim"
+  },
+  {
+    "name": "Casey Whitmore",
+    "gender": "Kadın (Queer, albinizmli)",
+    "age": 24,
+    "race": "Beyaz Amerikalı",
+    "traits": "ince yapı, çok açık beyaz-sarı saç, çok açık ten, açık renkli göz, modern minimalist giyim, kendinden emin sakin ifade"
+  },
+  {
+    "name": "Vikram Verma",
+    "gender": "Erkek",
+    "age": 34,
+    "race": "Güney Asyalı (Hint alt kıtası)",
+    "traits": "lean build, thick black wavy saç, dark brown göz, warm brown ten tonu, short well-groomed beard, serious ifade"
+  },
+  {
+    "name": "Rafael Moretti",
+    "gender": "Erkek",
+    "age": 48,
+    "race": "Güney Avrupalı (Akdeniz)",
+    "traits": "athletic build, dark chocolate saç, dark brown göz, olive-toned ten tonu, a rounded soft face, self-confident ifade"
+  },
+  {
+    "name": "Ana Kealoha",
+    "gender": "Kadın",
+    "age": 55,
+    "race": "Pasifik Adalı",
+    "traits": "petite build, dark curly saç, black göz, deep warm bronze ten tonu, soft freckles across the nose, relaxed ifade"
+  },
+  {
+    "name": "Sam Kowalczyk",
+    "gender": "Erkek",
+    "age": 35,
+    "race": "Beyaz Avrupalı",
+    "traits": "ince-atletik yapı, keçi sakal, vücut kılları görünür, açık ten, rahat gündelik tarz giyim, sıcak rahat ifade"
+  },
+  {
+    "name": "River Alden",
+    "gender": "Erkek",
+    "age": 31,
+    "race": "Karışık Irk",
+    "traits": "ortalama yapı, dağınık doğal uzun saç, güneşte yanmış ten, katmanlı kolye/bilezik takıları, doğal-bohem tarz"
+  },
+  {
+    "name": "Malcolm Hayes",
+    "gender": "Erkek",
+    "age": 28,
+    "race": "Afro-Amerikan",
+    "traits": "atletik yapı, kısa düzgün saç, koyu kahverengi ten, şık modern giyim, kendinden emin sıcak gülümseme"
+  },
+  {
+    "name": "Jae Park",
+    "gender": "Kadın",
+    "age": 27,
+    "race": "Doğu Asyalı (Kore)",
+    "traits": "atletik ince yapı, kısa siyah saç, açık ten, maskülen tarz giyim, kendinden emin dik duruş"
+  },
+  {
+    "name": "Isaiah Grant",
+    "gender": "Erkek",
+    "age": 30,
+    "race": "Afro-Amerikan",
+    "traits": "athletic build, locs saç, black göz, rich brown to caramel ten tonu, a bright genuine smile, calm ifade"
+  },
+  {
+    "name": "Emil Eriksson",
+    "gender": "Erkek",
+    "age": 41,
+    "race": "Kuzey Avrupalı (İskandinav)",
+    "traits": "broad-shouldered build, platinum blonde saç, sea green göz, fair, rosy-toned ten tonu, deep-set expressive eyes, calm ifade"
+  },
+  {
+    "name": "Wei Suzuki",
+    "gender": "Erkek",
+    "age": 45,
+    "race": "Doğu Asyalı (Çin/Kore/Japon)",
+    "traits": "broad-shouldered build, black with subtle waves saç, black göz, fair to light beige ten tonu, expressive eyebrows, professional composed posture ifade"
+  },
+  {
+    "name": "Hassan Haddad",
+    "gender": "Erkek",
+    "age": 45,
+    "race": "Arap / Kuzey Afrika (MENA)",
+    "traits": "lean build, dark brown curly saç, dark brown göz, warm tan to deep olive ten tonu, sharp angular features, serious ifade"
+  },
+  {
+    "name": "Emiko Park",
+    "gender": "Kadın",
+    "age": 46,
+    "race": "Doğu Asyalı (Çin/Kore/Japon)",
+    "traits": "average build, jet black bob saç, black göz, fair to light beige ten tonu, soft freckles across the nose, calm ifade"
+  },
+  {
+    "name": "Noor Haddad",
+    "gender": "Androjen",
+    "age": 25,
+    "race": "Arap / Orta Doğulu",
+    "traits": "ince yapı, kısa dalgalı siyah saç, sıcak zeytin ten, ifadeli koyu göz, sade modern androjen giyim"
+  },
+  {
+    "name": "Wren Talavera",
+    "gender": "Androjen",
+    "age": 30,
+    "race": "Latin Amerikalı",
+    "traits": "ortalama yapı, kısa taranmış geriye saç, sıcak ten tonu, güçlü kaşlar ile yumuşak göz ifadesi, iş-şık androjen giyim"
+  },
+  {
+    "name": "Dolores Vega",
+    "gender": "Kadın (Femme lezbiyen, dolgun)",
+    "age": 33,
+    "race": "Latin Amerikalı",
+    "traits": "dolgun kıvrımlı yapı, uzun siyah kıvırcık saç, sıcak ten tonu, zarif feminen makyaj, renkli çiçekli giyim"
+  },
+  {
+    "name": "Hank Dorsey",
+    "gender": "Erkek (Gey, deri/biker estetiği)",
+    "age": 47,
+    "race": "Beyaz Amerikalı",
+    "traits": "iri sağlam yapı, gür bıyık, kısa gri-kahverengi saç, açık ten, deri yelek, dövmeler, dominant sıcak ifade"
+  },
+  {
+    "name": "Ronnie Slate",
+    "gender": "Kadın (Metalhead)",
+    "age": 30,
+    "race": "Beyaz Avrupalı",
+    "traits": "ortalama yapı, uzun dalgalı siyah saç, açık ten, koyu göz makyajı, bant tişört ve deri ceket tarzı"
+  },
+  {
+    "name": "Priyanka Sethi",
+    "gender": "Kadın (Rave/elektronik müzik tarzı)",
+    "age": 24,
+    "race": "Güney Asyalı (Hint)",
+    "traits": "ince atletik yapı, yüksek topuz saç, sıcak kahverengi ten, glitter göz makyajı, kroptop ve kargo pantolon tarzı"
+  },
+  {
+    "name": "Reggie Kowalski",
+    "gender": "Erkek (Psychobilly)",
+    "age": 32,
+    "race": "Beyaz Amerikalı",
+    "traits": "ince yapı, yüksek pompadour saç modeli, açık ten, kol dövmeleri, retro bowling gömlek tarzı"
+  },
+  {
+    "name": "Federica Papadopoulos",
+    "gender": "Kadın",
+    "age": 53,
+    "race": "Güney Avrupalı (Akdeniz)",
+    "traits": "petite build, dark brown wavy saç, hazel göz, olive-toned ten tonu, high cheekbones, focused ifade"
+  },
+  {
+    "name": "Aolani Tupou",
+    "gender": "Kadın",
+    "age": 27,
+    "race": "Pasifik Adalı",
+    "traits": "petite build, dark curly saç, black göz, deep warm bronze ten tonu, a warm dimpled smile, relaxed ifade"
+  },
+  {
+    "name": "Oskar Karlsson",
+    "gender": "Erkek",
+    "age": 40,
+    "race": "Kuzey Avrupalı (İskandinav)",
+    "traits": "average build, ash blonde saç, pale grey göz, fair, rosy-toned ten tonu, naturally arched brows, calm ifade"
+  },
+  {
+    "name": "Elif Şahin",
+    "gender": "Kadın",
+    "age": 45,
+    "race": "Türk / Anadolu",
+    "traits": "petite build, black straight saç, hazel göz, warm olive ten tonu, a bright genuine smile, playful ifade"
+  },
+  {
+    "name": "Isabella Wilson",
+    "gender": "Kadın",
+    "age": 27,
+    "race": "Batı Avrupalı (Anglo/Cermen)",
+    "traits": "average build, dark brown saç, blue göz, fair with light freckling ten tonu, deep-set expressive eyes, curious ifade"
+  },
+  {
+    "name": "Zofia Sokolov",
+    "gender": "Kadın",
+    "age": 40,
+    "race": "Doğu Avrupalı (Slav)",
+    "traits": "athletic build, platinum blonde saç, green göz, fair, cool undertone ten tonu, gentle laugh lines, quietly intense expression ifade"
+  },
+  {
+    "name": "Elani Diallo-Rossi",
+    "gender": "Kadın",
+    "age": 50,
+    "race": "Karışık Irk (Multiracial)",
+    "traits": "athletic build, textured coily-wavy saç, hazel göz, warm medium tan ten tonu, a rounded soft face, serious ifade"
+  },
+  {
+    "name": "Ravi-John Wong-Torres",
+    "gender": "Erkek",
+    "age": 42,
+    "race": "Karışık Irk (Multiracial)",
+    "traits": "athletic build, textured coily-wavy saç, dark brown göz, warm medium tan ten tonu, high cheekbones, bold ifade"
+  },
+  {
+    "name": "Marnie Osei",
+    "gender": "Kadın (Soft butch lezbiyen)",
+    "age": 29,
+    "race": "Sahra Altı Afrikalı",
+    "traits": "ortalama yapı, kısa düzgün doğal saç, koyu kahverengi ten, temiz şık gündelik giyim, sıcak sakin gülümseme"
+  },
+  {
+    "name": "Birdie Callahan",
+    "gender": "Kadın (Genç tomboy lezbiyen)",
+    "age": 19,
+    "race": "Beyaz İrlandalı",
+    "traits": "ince gençlik yapısı, kısa dağınık kumral saç, çilli açık ten, rahat spor giyim, enerjik oyunbaz ifade"
+  },
+  {
+    "name": "Theo Lindgren",
+    "gender": "Non-binary (İşitme cihazlı)",
+    "age": 26,
+    "race": "İskandinav",
+    "traits": "ince yapı, kısa açık sarı saç, açık ten, görünür işitme cihazı, sakin kendinden emin ifade, modern rahat giyim"
+  },
+  {
+    "name": "Bruno Silva",
+    "gender": "Erkek (Trans erkek, dolgun/bear tipi)",
+    "age": 34,
+    "race": "Latin Amerikalı (Brezilyalı)",
+    "traits": "iri dolgun yapı, gür sakal, kısa siyah saç, sıcak ten tonu, sıcak samimi gülümseme, rahat gündelik giyim"
+  },
+  {
+    "name": "Charlie Taylor",
+    "gender": "Erkek",
+    "age": 34,
+    "race": "Batı Avrupalı (Anglo/Cermen)",
+    "traits": "broad-shouldered build, chestnut brown saç, grey-green göz, fair with light freckling ten tonu, high cheekbones, curious ifade"
+  },
+  {
+    "name": "Mert Aydın",
+    "gender": "Erkek",
+    "age": 25,
+    "race": "Türk / Anadolu",
+    "traits": "lean build, black wavy saç, dark brown göz, warm olive ten tonu, soft freckles across the nose, creative ifade"
+  },
+  {
+    "name": "Xue Choi",
+    "gender": "Kadın",
+    "age": 19,
+    "race": "Doğu Asyalı (Çin/Kore/Japon)",
+    "traits": "slender build, jet black bob saç, dark brown göz, fair to light beige ten tonu, a small beauty mark near the lip, strong ifade"
+  },
+  {
+    "name": "Indigo Blackwood",
+    "gender": "Androjen",
+    "age": 34,
+    "race": "Karışık Irk",
+    "traits": "ince orta yapı, uzun düz gri-lavanta boyalı saç, orta ten tonu, ince yüz hatları, sanatsal-avangart giyim"
+  },
+  {
+    "name": "Yuki Tanaka",
+    "gender": "Non-binary",
+    "age": 23,
+    "race": "Doğu Asyalı (Japon)",
+    "traits": "ince yapı, septum piercing, kısa asimetrik siyah saç, açık ten, kaykay/sokak modası tarzı"
+  },
+  {
+    "name": "Priya Anand",
+    "gender": "Kadın (Queer, akademik tarz)",
+    "age": 34,
+    "race": "Güney Asyalı (Hint)",
+    "traits": "ortalama yapı, gözlüklü, toplu bağlanmış siyah saç, sıcak kahverengi ten, entelektüel-şık giyim"
+  },
+  {
+    "name": "Callum Reyes",
+    "gender": "Erkek (Gey, atletik yüzücü tipi)",
+    "age": 24,
+    "race": "Karışık Irk (Filipinli/İrlandalı)",
+    "traits": "uzun ince atletik yapı, geniş omuzlar, kısa siyah saç, sıcak ten tonu, enerjik sportif ifade"
+  },
+  {
+    "name": "Lena Voss",
+    "gender": "Kadın (Queer, vitiligolu)",
+    "age": 28,
+    "race": "Beyaz Alman",
+    "traits": "ince yapı, vitiligo izli açık-orta ten, kısa sarı saç, kendinden emin sakin ifade, minimalist modern giyim"
+  },
+  {
+    "name": "Desmond Clarke",
+    "gender": "Erkek (Gey, tekerlekli sandalye kullanan)",
+    "age": 32,
+    "race": "Afro-Amerikan",
+    "traits": "üst beden güçlü yapı, kısa saç, koyu kahverengi ten, tekerlekli sandalye, şık modern giyim, sıcak kendinden emin gülümseme"
+  },
+  {
+    "name": "Wendy Okafor",
+    "gender": "Kadın (Mod tarzı)",
+    "age": 26,
+    "race": "Sahra Altı Afrikalı",
+    "traits": "ince yapı, düz bob kesim saç, koyu kahverengi ten, kalın eyeliner ve kirpik, geometrik desenli mini elbise"
+  },
+  {
+    "name": "Django Ferreira",
+    "gender": "Erkek (Ağır dövmeli alternatif model)",
+    "age": 28,
+    "race": "Karışık Irk (Brezilyalı)",
+    "traits": "atletik yapı, kısa yanları taralı saç, sıcak ten tonu, boyun ve kollarda görünür dövmeler, gerdirilmiş kulak küpesi"
+  },
+  {
+    "name": "Mateo Torres",
+    "gender": "Erkek",
+    "age": 20,
+    "race": "Latin Amerikalı",
+    "traits": "broad-shouldered build, dark brown wavy saç, hazel göz, warm tan to golden brown ten tonu, naturally arched brows, energetic ifade"
+  },
+  {
+    "name": "Salma Al-Farsi",
+    "gender": "Kadın",
+    "age": 43,
+    "race": "Arap / Kuzey Afrika (MENA)",
+    "traits": "average build, dark brown curly saç, black göz, warm tan to deep olive ten tonu, a strong jawline, quietly intense expression ifade"
+  },
+  {
+    "name": "Dixie Lang",
+    "gender": "Kadın (Rockabilly/pin-up lezbiyen)",
+    "age": 31,
+    "race": "Beyaz Amerikalı",
+    "traits": "kum saati vücut hattı, kıvrımlı siyah saç üstte tutturulmuş, açık ten, kırmızı ruj, retro 50'ler tarzı elbise"
+  },
+  {
+    "name": "Elliot Marsh",
+    "gender": "Erkek (Gey, gözlüklü/nerdy tarz)",
+    "age": 26,
+    "race": "Beyaz Amerikalı",
+    "traits": "ince yapı, gözlük, dağınık kahverengi saç, açık ten, kardigan/gömlek tarzı giyim, meraklı sıcak ifade"
+  },
+  {
+    "name": "Aditya Bose",
+    "gender": "Androjen",
+    "age": 21,
+    "race": "Güney Asyalı (Hint/Bengal)",
+    "traits": "ince zayıf yapı, orta boy dalgalı siyah saç, sıcak kahverengi ten, ince kemik yapısı, genç androjen sokak modası"
+  },
+  {
+    "name": "Marlowe Fitch",
+    "gender": "Androjen",
+    "age": 45,
+    "race": "Beyaz Amerikalı",
+    "traits": "orta yapı, kısa gri-kumral saç, açık ten, olgun keskin yüz hatları, sade klasik androjen giyim"
+  },
+  {
+    "name": "Selena Marchetti",
+    "gender": "Kadın (Ağır dövmeli alternatif model)",
+    "age": 29,
+    "race": "Güney Avrupalı (İtalyan)",
+    "traits": "ince yapı, kısa siyah saç, açık-orta ten, boyun ve kollarda görünür dövmeler, septum piercing"
+  },
+  {
+    "name": "Otto Reinhardt",
+    "gender": "Erkek (Endüstriyel/EBM tarzı)",
+    "age": 35,
+    "race": "Alman",
+    "traits": "ince uzun yapı, siyah düz saç, çok açık ten, siyah harness/tactical tarzı giyim, ciddi sert ifade"
+  },
+  {
+    "name": "June Alderidge",
+    "gender": "Kadın (Neo-hippie)",
+    "age": 25,
+    "race": "Beyaz Amerikalı",
+    "traits": "ince yapı, uzun dalgalı doğal saç, açık-güneşte yanmış ten, saç bandı, katmanlı doğal kumaş giyim ve takı"
+  },
+  {
+    "name": "Tigist Bekele",
+    "gender": "Androjen",
+    "age": 26,
+    "race": "Doğu Afrikalı (Etiyopyalı)",
+    "traits": "ince uzun yapı, kısa kıvırcık doğal saç, koyu kahverengi ten, yüksek elmacık kemikleri, minimalist zarif giyim"
+  },
+  {
+    "name": "Hototo Whitehorse",
+    "gender": "Erkek",
+    "age": 21,
+    "race": "Yerli Amerikan (Native)",
+    "traits": "slim build, dark brown braided saç, dark brown göz, warm copper brown ten tonu, a light stubble beard, playful ifade"
+  },
+  {
+    "name": "Chai Wijaya",
+    "gender": "Erkek",
+    "age": 33,
+    "race": "Güneydoğu Asyalı",
+    "traits": "athletic build, black glossy saç, black göz, warm golden tan ten tonu, a strong jawline, friendly approachable demeanor ifade"
+  },
+  {
+    "name": "Emma Baker",
+    "gender": "Kadın",
+    "age": 25,
+    "race": "Batı Avrupalı (Anglo/Cermen)",
+    "traits": "average build, dark brown saç, hazel göz, fair with light freckling ten tonu, a bright genuine smile, creative ifade"
+  },
+  {
+    "name": "Kestrel Lindberg",
+    "gender": "Androjen",
+    "age": 19,
+    "race": "İskandinav",
+    "traits": "ince gençlik yapısı, kısa açık sarı saç, çok açık ten, ince yüz hatları, genç minimalist tarz"
+  },
+  {
+    "name": "Dinara Nazarov",
+    "gender": "Kadın",
+    "age": 21,
+    "race": "Orta Asyalı (Türki/Moğol)",
+    "traits": "petite build, dark brown saç, black göz, warm beige with golden undertone ten tonu, a small beauty mark near the lip, professional composed posture if"
+  },
+  {
+    "name": "Kai Alapai",
+    "gender": "Erkek (Gey, sörfçü tipi)",
+    "age": 24,
+    "race": "Pasifik Adalı",
+    "traits": "atletik uzun yapı, dalgalı kumsal saçı, güneşte yanmış bronz ten, rahat plaj tarzı giyim, enerjik gülümseme"
+  },
+  {
+    "name": "Aponi Whitehorse",
+    "gender": "Kadın (Queer, yerli Amerikan)",
+    "age": 28,
+    "race": "Yerli Amerikan",
+    "traits": "ortalama yapı, uzun siyah düz saç, bakır ten tonu, geleneksel takı detayları, sakin güçlü ifade"
+  },
+  {
+    "name": "Faisal Rahimi",
+    "gender": "Erkek (Gey, Orta Doğulu)",
+    "age": 29,
+    "race": "Arap / Orta Doğulu",
+    "traits": "ortalama atletik yapı, kısa siyah kıvırcık saç, düzgün sakal, sıcak zeytin ten, şık modern giyim, kendinden emin sıcak gülümseme"
+  },
+  {
+    "name": "Baris Aydemir",
+    "gender": "Androjen",
+    "age": 29,
+    "race": "Türk / Anadolu",
+    "traits": "ince orta yapı, kısa siyah dalgalı saç, sıcak zeytin ten, ifadeli koyu göz, modern sade giyim"
+  },
+  {
+    "name": "Coco Delacroix",
+    "gender": "Androjen",
+    "age": 31,
+    "race": "Karışık Irk (Fransız/Senegalli)",
+    "traits": "ince yapı, kısa afro saç, orta-koyu ten tonu, yüksek elmacık kemikleri, yüksek moda avangart giyim"
+  },
+  {
+    "name": "Temujin Bolatov",
+    "gender": "Erkek",
+    "age": 28,
+    "race": "Orta Asyalı (Türki/Moğol)",
+    "traits": "slim build, straight black saç, hazel göz, warm beige with golden undertone ten tonu, high cheekbones, playful ifade"
+  },
+  {
+    "name": "Chidi Adeyemi",
+    "gender": "Erkek",
+    "age": 20,
+    "race": "Sahra Altı Afrikalı",
+    "traits": "athletic build, short coily saç, black göz, deep rich brown ten tonu, a bright genuine smile, quietly intense expression ifade"
+  },
+  {
+    "name": "Milena Kowalski",
+    "gender": "Kadın",
+    "age": 37,
+    "race": "Doğu Avrupalı (Slav)",
+    "traits": "curvy build, dark brown saç, grey göz, fair, cool undertone ten tonu, a small beauty mark near the lip, strong ifade"
+  },
+  {
+    "name": "Astrid Karlsson",
+    "gender": "Kadın",
+    "age": 26,
+    "race": "Kuzey Avrupalı (İskandinav)",
+    "traits": "slender build, strawberry blonde saç, sea green göz, fair, rosy-toned ten tonu, a bright genuine smile, strong ifade"
+  },
+  {
+    "name": "Meerim Tashkentov",
+    "gender": "Kadın",
+    "age": 25,
+    "race": "Orta Asyalı (Türki/Moğol)",
+    "traits": "athletic build, straight black saç, dark brown göz, warm beige with golden undertone ten tonu, a strong jawline, relaxed ifade"
+  },
+  {
+    "name": "Riya Chowdhury",
+    "gender": "Kadın",
+    "age": 25,
+    "race": "Güney Asyalı (Hint alt kıtası)",
+    "traits": "athletic build, thick black wavy saç, dark brown göz, warm brown ten tonu, a small beauty mark near the lip, energetic ifade"
+  },
+  {
+    "name": "Rohan Sharma",
+    "gender": "Erkek",
+    "age": 30,
+    "race": "Güney Asyalı (Hint alt kıtası)",
+    "traits": "slim build, thick black wavy saç, dark brown göz, warm brown ten tonu, expressive eyebrows, quietly intense expression ifade"
+  },
+  {
+    "name": "Samira Ibrahim",
+    "gender": "Kadın",
+    "age": 26,
+    "race": "Arap / Kuzey Afrika (MENA)",
+    "traits": "petite build, black wavy saç, black göz, warm tan to deep olive ten tonu, deep-set expressive eyes, calm ifade"
+  },
+  {
+    "name": "Yelena Ivanov",
+    "gender": "Kadın",
+    "age": 31,
+    "race": "Doğu Avrupalı (Slav)",
+    "traits": "petite build, black saç, light blue göz, fair, cool undertone ten tonu, a warm dimpled smile, playful ifade"
+  },
+  {
+    "name": "Ling Hidayat",
+    "gender": "Kadın",
+    "age": 25,
+    "race": "Güneydoğu Asyalı",
+    "traits": "curvy build, black straight saç, black göz, warm golden tan ten tonu, a rounded soft face, playful ifade"
+  },
+  {
+    "name": "Elijah Coleman",
+    "gender": "Erkek",
+    "age": 39,
+    "race": "Afro-Amerikan",
+    "traits": "athletic build, natural curls saç, dark brown göz, rich brown to caramel ten tonu, expressive eyebrows, strong ifade"
+  },
+  {
+    "name": "Dewi Tran",
+    "gender": "Kadın",
+    "age": 28,
+    "race": "Güneydoğu Asyalı",
+    "traits": "athletic build, dark brown wavy saç, black göz, warm golden tan ten tonu, a bright genuine smile, serious ifade"
+  },
+  {
+    "name": "Darnell Washington",
+    "gender": "Erkek",
+    "age": 28,
+    "race": "Afro-Amerikan",
+    "traits": "lean build, braids saç, black göz, rich brown to caramel ten tonu, a bright genuine smile, calm ifade"
+  },
+  {
+    "name": "Ecrin Çelik",
+    "gender": "Kadın",
+    "age": 19,
+    "race": "Türk / Anadolu",
+    "traits": "petite build, black straight saç, hazel göz, warm olive ten tonu, a small beauty mark near the lip, serious ifade"
+  },
+  {
+    "name": "Trang Nguyen",
+    "gender": "Kadın",
+    "age": 33,
+    "race": "Güneydoğu Asyalı",
+    "traits": "petite build, black glossy saç, black göz, warm golden tan ten tonu, a bright genuine smile, gentle ifade"
+  },
+  {
+    "name": "Kimo Havili",
+    "gender": "Erkek",
+    "age": 29,
+    "race": "Pasifik Adalı",
+    "traits": "broad-shouldered build, dark curly saç, dark brown göz, deep warm bronze ten tonu, a rounded soft face, professional composed posture ifade"
+  },
+  {
+    "name": "Salma Mansour",
+    "gender": "Kadın",
+    "age": 36,
+    "race": "Arap / Kuzey Afrika (MENA)",
+    "traits": "curvy build, black wavy saç, black göz, warm tan to deep olive ten tonu, a rounded soft face, strong ifade"
+  },
+  {
+    "name": "Sasha Volkova",
+    "gender": "Androjen",
+    "age": 23,
+    "race": "Doğu Avrupalı (Rus)",
+    "traits": "ince yapı, platin sarı kısa saç, çok açık ten, keskin elmacık kemikleri, minimalist soğuk-şık giyim"
+  },
+  {
+    "name": "Ezekiel Tso",
+    "gender": "Androjen",
+    "age": 36,
+    "race": "Yerli Amerikan",
+    "traits": "orta yapı, uzun düz siyah saç geriye toplanmış, bakır ten tonu, güçlü ama dengeli yüz hatları, doğal-modern giyim karışımı"
+  },
+  {
+    "name": "Junie Alvarado",
+    "gender": "Androjen",
+    "age": 20,
+    "race": "Latin Amerikalı (Filipinli/Meksikalı)",
+    "traits": "ince yapı, kısa boyalı pembe-gri saç, sıcak ten tonu, yumuşak yuvarlak yüz ile keskin kaş karışımı, genç eklektik giyim"
+  },
+  {
+    "name": "Renee Duplessis",
+    "gender": "Kadın (Stud)",
+    "age": 28,
+    "race": "Afro-Amerikan",
+    "traits": "atletik-sağlam yapı, kısa dalgalı saç, koyu kahverengi ten, geniş omuzlar, kendinden emin dik duruş, sokak modası tarzı"
+  },
+  {
+    "name": "Kenji Watanabe",
+    "gender": "Erkek (Soft masc)",
+    "age": 25,
+    "race": "Doğu Asyalı (Japon)",
+    "traits": "ince yapı, yumuşak dalgalı orta boy saç, açık ten, nazik ifadeli göz, rahat pastel tonlu gündelik giyim"
+  },
+  {
+    "name": "Destiny Laveau",
+    "gender": "Kadın (Hyper femme)",
+    "age": 26,
+    "race": "Afro-Amerikan",
+    "traits": "kum saati vücut hattı, uzun dalgalı saç uzatma, koyu kahverengi ten, dramatik uzun kirpik ve dolgun dudak makyajı, ışıltılı abartılı feminen giyim"
+  },
+  {
+    "name": "Douglas Petrov",
+    "gender": "Erkek (Bear)",
+    "age": 44,
+    "race": "Doğu Avrupalı",
+    "traits": "iri gösterişli yapı, gür sakal ve vücut kılları, açık ten, sıcak samimi gülümseme, rahat flanel giyim"
+  },
+  {
+    "name": "Aiden Foley",
+    "gender": "Erkek (Twink)",
+    "age": 22,
+    "race": "Beyaz İrlandalı",
+    "traits": "ince gençlik yapısı, kısa düzgün saç, çilli açık ten, pürüzsüz cilt, şık genç giyim, canlı gülümseme"
+  },
+  {
+    "name": "Idris Amari",
+    "gender": "Erkek (Otter)",
+    "age": 30,
+    "race": "Arap / Kuzey Afrikalı",
+    "traits": "ince-atletik yapı, kısa sakal, vücut kılları görünür, sıcak zeytin ten, rahat gündelik giyim, sıcak rahat ifade"
+  },
+  {
+    "name": "Ophelia Marchetti",
+    "gender": "Kadın (Goth)",
+    "age": 24,
+    "race": "Güney Avrupalı (İtalyan)",
+    "traits": "ince yapı, uzun düz siyah saç, çok açık ten, dramatik koyu göz makyajı, siyah Victoria dönemi esintili giyim"
+  },
+  {
+    "name": "Tobias Kessler",
+    "gender": "Erkek (Goth)",
+    "age": 27,
+    "race": "Alman",
+    "traits": "ince uzun yapı, uzun düz siyah saç, çok açık ten, koyu göz kalemi, siyah/punk karışımı giyim"
+  },
+  {
+    "name": "Gabriela Nuñez",
+    "gender": "Kadın (Punk)",
+    "age": 25,
+    "race": "Latin Amerikalı",
+    "traits": "ince yapı, sivri dikenli koyu saç, piercingler, kol dövmeleri, deri ceket, isyankar tavır"
+  },
+  {
+    "name": "Skylar Voss",
+    "gender": "Non-binary (Emo)",
+    "age": 20,
+    "race": "Beyaz Amerikalı",
+    "traits": "ince yapı, yana taranmış siyah saç, açık ten, koyu göz kalemi, dar kot ve bant tişört tarzı"
+  },
+  {
+    "name": "Haruki Endo",
+    "gender": "Erkek (Emo)",
+    "age": 19,
+    "race": "Doğu Asyalı (Japon)",
+    "traits": "ince yapı, yana taranmış siyah saç gözü kapatan, açık ten, koyu göz kalemi, dar kot ve bant tişört tarzı"
+  },
+  {
+    "name": "Arun Vasquez",
+    "gender": "Non-binary",
+    "age": 25,
+    "race": "Karışık Irk (Hint/Meksikalı)",
+    "traits": "ince yapı, kısa dalgalı siyah saç, sıcak ten tonu, nötr eklektik giyim, sakin kendinden emin ifade"
+  },
+  {
+    "name": "Harper Lindqvist",
+    "gender": "Kadın (Biseksüel)",
+    "age": 30,
+    "race": "İskandinav",
+    "traits": "ortalama yapı, dalgalı açık sarı saç, açık ten, sıcak samimi gülümseme, rahat gündelik şık giyim"
+  },
+  {
+    "name": "Tunde Adeyemi",
+    "gender": "Erkek (Biseksüel)",
+    "age": 28,
+    "race": "Sahra Altı Afrikalı",
+    "traits": "atletik yapı, kısa düzgün saç, koyu kahverengi ten, şık modern giyim, kendinden emin sıcak gülümseme"
+  },
+  {
+    "name": "Yong-Su Zhang",
+    "gender": "Erkek",
+    "age": 27,
+    "race": "Doğu Asyalı (Çin/Kore/Japon)",
+    "traits": "broad-shouldered build, jet black bob saç, dark brown göz, fair to light beige ten tonu, a bright genuine smile, focused ifade"
+  },
+  {
+    "name": "Mehmet Yılmaz",
+    "gender": "Erkek",
+    "age": 28,
+    "race": "Türk / Anadolu",
+    "traits": "lean build, black wavy saç, hazel göz, warm olive ten tonu, sharp angular features, playful ifade"
+  },
+  {
+    "name": "Nabil Al-Farsi",
+    "gender": "Erkek",
+    "age": 23,
+    "race": "Arap / Kuzey Afrika (MENA)",
+    "traits": "athletic build, black wavy saç, dark brown göz, warm tan to deep olive ten tonu, soft freckles across the nose, energetic ifade"
+  },
+  {
+    "name": "Paula Rodriguez",
+    "gender": "Kadın",
+    "age": 22,
+    "race": "Latin Amerikalı",
+    "traits": "curvy build, black straight saç, hazel göz, warm tan to golden brown ten tonu, gentle laugh lines, professional composed posture ifade"
+  },
+  {
+    "name": "Camila Rios",
+    "gender": "Kadın (Stud)",
+    "age": 24,
+    "race": "Latin Amerikalı",
+    "traits": "atletik yapı, kısa fade saç, sıcak ten tonu, dövmeler görünür, kendinden emin rahat duruş"
+  },
+  {
+    "name": "Owen Bellweather",
+    "gender": "Erkek (Soft masc)",
+    "age": 27,
+    "race": "Beyaz Amerikalı",
+    "traits": "ince yapı, dağınık kahverengi saç, açık ten, yumuşak yüz hatları, kardigan ve gömlek tarzı"
+  },
+  {
+    "name": "Valentina Cruz",
+    "gender": "Kadın (Hyper femme)",
+    "age": 29,
+    "race": "Latin Amerikalı",
+    "traits": "kum saati vücut hattı, uzun dalgalı siyah saç, sıcak ten tonu, dramatik göz makyajı, ışıltılı abartılı feminen giyim"
+  },
+  {
+    "name": "Rafael Contreras",
+    "gender": "Erkek (Bear)",
+    "age": 39,
+    "race": "Latin Amerikalı",
+    "traits": "iri sağlam yapı, gür sakal, koyu vücut kılları, sıcak ten tonu, sıcak rahat ifade, rahat gündelik giyim"
+  },
+  {
+    "name": "Ren Fujimoto",
+    "gender": "Erkek (Twink)",
+    "age": 21,
+    "race": "Doğu Asyalı (Japon)",
+    "traits": "ince gençlik yapısı, düz siyah saç, açık ten, pürüzsüz cilt, şık genç giyim, canlı gülümseme"
+  },
+  {
+    "name": "Marcus Deveraux",
+    "gender": "Erkek (Otter)",
+    "age": 33,
+    "race": "Afro-Amerikan",
+    "traits": "ince-atletik yapı, kısa sakal, vücut kılları görünür, koyu kahverengi ten, rahat gündelik giyim, sıcak rahat ifade"
+  },
+  {
+    "name": "Sage Littlefeather",
+    "gender": "Non-binary",
+    "age": 28,
+    "race": "Yerli Amerikan",
+    "traits": "ortalama yapı, uzun siyah saç kısmen örgülü, bakır ten tonu, geleneksel ve modern giyim karışımı, sakin dengeli duruş"
+  },
+  {
+    "name": "William Hughes",
+    "gender": "Erkek",
+    "age": 46,
+    "race": "Batı Avrupalı (Anglo/Cermen)",
+    "traits": "slim build, chestnut brown saç, grey-green göz, fair with light freckling ten tonu, a warm dimpled smile, focused ifade"
+  },
+  {
+    "name": "Rohan Chowdhury",
+    "gender": "Erkek",
+    "age": 31,
+    "race": "Güney Asyalı (Hint alt kıtası)",
+    "traits": "lean build, thick black wavy saç, dark brown göz, warm brown ten tonu, naturally arched brows, curious ifade"
+  },
+  {
+    "name": "Amira Mansour",
+    "gender": "Kadın",
+    "age": 30,
+    "race": "Arap / Kuzey Afrika",
+    "traits": "athletic build, black wavy saç, black göz, warm tan to deep olive ten tonu, a bright genuine smile, gentle ifade"
+  },
+  {
+    "name": "Mateo Torres",
+    "gender": "Erkek",
+    "age": 19,
+    "race": "Latin Amerikalı",
+    "traits": "lean build, black straight saç, dark brown göz, warm tan to golden brown ten tonu, a strong jawline, self-confident ifade"
+  },
+  {
+    "name": "Freya Andersson",
+    "gender": "Kadın",
+    "age": 20,
+    "race": "Kuzey Avrupalı (İskandinav)",
+    "traits": "athletic build, light brown saç, ice blue göz, fair, rosy-toned ten tonu, expressive eyebrows, self-confident ifade"
+  },
+  {
+    "name": "Omar Al-Farsi",
+    "gender": "Erkek",
+    "age": 26,
+    "race": "Arap / Kuzey Afrika",
+    "traits": "average build, black straight saç, hazel göz, warm tan to deep olive ten tonu, high cheekbones, friendly approachable demeanor ifade"
+  },
+  {
+    "name": "Siti Pham",
+    "gender": "Kadın",
+    "age": 18,
+    "race": "Güneydoğu Asyalı",
+    "traits": "athletic build, dark brown wavy saç, dark brown göz, warm golden tan ten tonu, high cheekbones, creative ifade"
+  },
+  {
+    "name": "Lars Andersson",
+    "gender": "Erkek",
+    "age": 27,
+    "race": "Kuzey Avrupalı (İskandinav)",
+    "traits": "athletic build, light brown saç, sea green göz, fair, rosy-toned ten tonu, a warm dimpled smile, relaxed ifade"
+  },
+  {
+    "name": "Marco Costa",
+    "gender": "Erkek",
+    "age": 21,
+    "race": "Güney Avrupalı (İtalyan/Yunan)",
+    "traits": "slim build, chestnut saç, dark brown göz, olive-toned ten tonu, expressive eyebrows, gentle ifade"
+  },
+  {
+    "name": "Chiara Vlachos",
+    "gender": "Kadın",
+    "age": 20,
+    "race": "Güney Avrupalı (İtalyan/Yunan)",
+    "traits": "petite build, black curly saç, amber göz, olive-toned ten tonu, high cheekbones, energetic ifade"
+  },
+  {
+    "name": "Min-jun Park",
+    "gender": "Erkek",
+    "age": 29,
+    "race": "Doğu Asyalı (Çin/Kore/Japon)",
+    "traits": "average build, jet black bob saç, black göz, fair to light beige ten tonu, gentle laugh lines, curious ifade"
+  },
+  {
+    "name": "Ryo Tanaka",
+    "gender": "Erkek",
+    "age": 24,
+    "race": "Doğu Asyalı (Çin/Kore/Japon)",
+    "traits": "lean build, jet black bob saç, dark brown göz, fair to light beige ten tonu, gentle laugh lines, playful ifade"
+  },
+  {
+    "name": "Divya Patel",
+    "gender": "Kadın",
+    "age": 21,
+    "race": "Güney Asyalı (Hint alt kıtası)",
+    "traits": "slender build, black straight saç, dark brown göz, warm brown ten tonu, a bright genuine smile, bold ifade"
+  },
+  {
+    "name": "Noor Saleh",
+    "gender": "Kadın",
+    "age": 21,
+    "race": "Arap / Kuzey Afrika",
+    "traits": "petite build, black straight saç, dark brown göz, warm tan to deep olive ten tonu, gentle laugh lines, calm ifade"
+  },
+  {
+    "name": "Aditya Patel",
+    "gender": "Erkek",
+    "age": 29,
+    "race": "Güney Asyalı (Hint alt kıtası)",
+    "traits": "lean build, thick black wavy saç, black göz, warm brown ten tonu, naturally arched brows, creative ifade"
+  },
+  {
+    "name": "Malik Coleman",
+    "gender": "Erkek",
+    "age": 29,
+    "race": "Afro-Amerikan",
+    "traits": "slim build, braids saç, dark brown göz, rich brown to caramel ten tonu, soft freckles across the nose, energetic ifade"
+  },
+  {
+    "name": "Karim Al-Farsi",
+    "gender": "Erkek",
+    "age": 29,
+    "race": "Arap / Kuzey Afrika",
+    "traits": "lean build, black wavy saç, hazel göz, warm tan to deep olive ten tonu, high cheekbones, creative ifade"
+  },
+  {
+    "name": "Zayd Silva-Park",
+    "gender": "Erkek",
+    "age": 21,
+    "race": "Karışık Irk (Multiracial)",
+    "traits": "lean build, wavy black-brown saç, hazel göz, warm medium tan ten tonu, naturally arched brows, relaxed ifade"
+  },
+  {
+    "name": "Siti Chaiyasit",
+    "gender": "Kadın",
+    "age": 19,
+    "race": "Güneydoğu Asyalı",
+    "traits": "average build, dark brown wavy saç, black göz, warm golden tan ten tonu, soft freckles across the nose, energetic ifade"
+  },
+  {
+    "name": "Ariadni Rossi",
+    "gender": "Kadın",
+    "age": 22,
+    "race": "Güney Avrupalı (İtalyan/Yunan)",
+    "traits": "average build, black curly saç, amber göz, olive-toned ten tonu, a warm dimpled smile, self-confident ifade"
+  },
+  {
+    "name": "Budi Pham",
+    "gender": "Erkek",
+    "age": 22,
+    "race": "Güneydoğu Asyalı",
+    "traits": "athletic build, black straight saç, black göz, warm golden tan ten tonu, a warm dimpled smile, bold ifade"
+  },
+  {
+    "name": "Ayşe Çelik",
+    "gender": "Kadın",
+    "age": 29,
+    "race": "Türk / Anadolu",
+    "traits": "athletic build, dark brown saç, dark brown göz, warm olive ten tonu, expressive eyebrows, calm ifade"
+  },
+  {
+    "name": "Chidi Mensah",
+    "gender": "Erkek",
+    "age": 30,
+    "race": "Sahra Altı Afrikalı",
+    "traits": "average build, short coily saç, dark brown göz, deep rich brown ten tonu, a strong jawline, calm ifade"
+  },
+  {
+    "name": "Jamal Jefferson",
+    "gender": "Erkek",
+    "age": 29,
+    "race": "Afro-Amerikan",
+    "traits": "lean build, braids saç, dark brown göz, rich brown to caramel ten tonu, a warm dimpled smile, bold ifade"
+  },
+  {
+    "name": "George Wilson",
+    "gender": "Erkek",
+    "age": 19,
+    "race": "Batı Avrupalı (İngiliz/Alman)",
+    "traits": "slim build, dark brown saç, blue göz, fair with light freckling ten tonu, a warm dimpled smile, curious ifade"
+  },
+  {
+    "name": "Onur Şahin",
+    "gender": "Erkek",
+    "age": 29,
+    "race": "Türk / Anadolu",
+    "traits": "slim build, chestnut saç, hazel göz, warm olive ten tonu, soft freckles across the nose, friendly approachable demeanor ifade"
+  },
+  {
+    "name": "Katarina Kaczmarek",
+    "gender": "Kadın",
+    "age": 27,
+    "race": "Doğu Avrupalı (Slav)",
+    "traits": "slender build, light brown saç, green göz, fair, cool undertone ten tonu, a bright genuine smile, gentle ifade"
+  },
+  {
+    "name": "Kenji Chen",
+    "gender": "Erkek",
+    "age": 30,
+    "race": "Doğu Asyalı (Çin/Kore/Japon)",
+    "traits": "average build, jet black bob saç, dark brown göz, fair to light beige ten tonu, a warm dimpled smile, calm ifade"
+  },
+  {
+    "name": "Charlotte Hughes",
+    "gender": "Kadın",
+    "age": 27,
+    "race": "Batı Avrupalı (İngiliz/Alman)",
+    "traits": "petite build, chestnut brown saç, blue göz, fair with light freckling ten tonu, a warm dimpled smile, playful ifade"
+  },
+  {
+    "name": "Anh Tran",
+    "gender": "Kadın",
+    "age": 26,
+    "race": "Güneydoğu Asyalı",
+    "traits": "average build, dark brown wavy saç, dark brown göz, warm golden tan ten tonu, gentle laugh lines, energetic ifade"
+  },
+  {
+    "name": "Vikram Gupta",
+    "gender": "Erkek",
+    "age": 19,
+    "race": "Güney Asyalı (Hint alt kıtası)",
+    "traits": "average build, thick black wavy saç, dark brown göz, warm brown ten tonu, a bright genuine smile, relaxed ifade"
+  },
+  {
+    "name": "Keisha Washington",
+    "gender": "Kadın",
+    "age": 19,
+    "race": "Afro-Amerikan",
+    "traits": "petite build, short fade saç, dark brown göz, rich brown to caramel ten tonu, soft freckles across the nose, calm ifade"
+  },
+  {
+    "name": "Andres Rodriguez",
+    "gender": "Erkek",
+    "age": 22,
+    "race": "Latin Amerikalı",
+    "traits": "athletic build, dark brown wavy saç, hazel göz, warm tan to golden brown ten tonu, a strong jawline, relaxed ifade"
+  },
+  {
+    "name": "Daiki Kim",
+    "gender": "Erkek",
+    "age": 19,
+    "race": "Doğu Asyalı (Çin/Kore/Japon)",
+    "traits": "slim build, straight black saç, dark brown göz, fair to light beige ten tonu, expressive eyebrows, playful ifade"
+  },
+  {
+    "name": "Deniz Çelik",
+    "gender": "Kadın",
+    "age": 29,
+    "race": "Türk / Anadolu",
+    "traits": "slender build, black wavy saç, hazel göz, warm olive ten tonu, naturally arched brows, playful ifade"
+  },
+  {
+    "name": "Thorolf Kase",
+    "gender": "Erkek",
+    "age": 32,
+    "race": "İskandinav",
+    "traits": "uzun boylu, geniş omuzlu atletik yapı, uzun dalgalı bal rengi saç manbun ile toplanmış, gür sakal, açık ten, keskin çene hattı"
+  },
+  {
+    "name": "Vihaan Oberoi",
+    "gender": "Erkek",
+    "age": 28,
+    "race": "Güney Asyalı (Hint)",
+    "traits": "atletik orta yapı, uzun siyah dalgalı saç yüksek manbun ile toplanmış, sıcak kahverengi ten, düzgün sakal, ifadeli koyu göz"
+  },
+  {
+    "name": "Emiliano Vasquez-Duarte",
+    "gender": "Erkek",
+    "age": 30,
+    "race": "Latin Amerikalı",
+    "traits": "atletik yapı, uzun dalgalı kahverengi saç alt manbun ile toplanmış, sıcak ten tonu, hafif sakal, güçlü elmacık kemikleri"
+  },
+  {
+    "name": "Manaia Tuiloma",
+    "gender": "Erkek",
+    "age": 26,
+    "race": "Pasifik Adalı",
+    "traits": "uzun boylu iri kaslı yapı, uzun siyah dalgalı saç manbun ile toplanmış, bronz ten tonu, geleneksel dövme izleri görünür"
+  },
+  {
+    "name": "Sora Yamagata",
+    "gender": "Erkek (Feminen)",
+    "age": 24,
+    "race": "Doğu Asyalı (Japon)",
+    "traits": "ince zarif yapı, uzun ipeksi düz siyah saç, açık ten, yumuşak ince yüz hatları, ipek bluz tarzı giyim"
+  },
+  {
+    "name": "Jelani Osazuwa",
+    "gender": "Erkek (Feminen)",
+    "age": 27,
+    "race": "Sahra Altı Afrikalı",
+    "traits": "ince yapı, uzun örgülü saç, koyu kahverengi ten, yumuşak ifadeli göz, zarif akışkan giyim tarzı"
+  },
+  {
+    "name": "Bashir Nasrallah",
+    "gender": "Erkek (Feminen)",
+    "age": 25,
+    "race": "Arap / Orta Doğulu",
+    "traits": "ince yapı, uzun dalgalı siyah saç, sıcak zeytin ten, hafif göz kalemi, zarif modern giyim tarzı"
+  },
+  {
+    "name": "Wilhelm Faust",
+    "gender": "Erkek (Feminen)",
+    "age": 29,
+    "race": "Alman",
+    "traits": "ince yapı, uzun dalgalı sarı saç, açık ten, yumuşak ince yüz hatları, zarif akışkan giyim tarzı, hafif makyaj"
+  },
+  {
+    "name": "Xiomara Delgado",
+    "gender": "Kadın",
+    "age": 25,
+    "race": "Latin Amerikalı",
+    "traits": "ince yapı, canlı yeşil kısa bob saç, sıcak ten tonu, keskin eyeliner makyajı, alternatif tarz giyim"
+  },
+  {
+    "name": "Kofi Abara-Lindt",
+    "gender": "Erkek",
+    "age": 31,
+    "race": "Karışık Irk (Gana/Alman)",
+    "traits": "atletik yapı, kısa gümüş-gri boyalı saç, koyu ten tonu, keskin elmacık kemikleri, yüksek moda giyim tarzı"
+  },
+  {
+    "name": "Rune Adair",
+    "gender": "Non-binary",
+    "age": 23,
+    "race": "Karışık Irk (İskoç/Filipinli)",
+    "traits": "ince yapı, ombre mor-mavi geçişli düz saç, orta ten tonu, ifadeli göz, eklektik sokak modası tarzı"
+  },
+  {
+    "name": "Freja Solheim",
+    "gender": "Kadın",
+    "age": 27,
+    "race": "İskandinav",
+    "traits": "ince yapı, canlı turuncu-kızıl kısa saç, çok açık ten, çilli yüz, minimalist zarif giyim"
+  },
+  {
+    "name": "Delphine Okonkwo",
+    "gender": "Kadın",
+    "age": 33,
+    "race": "Afro-Amerikan",
+    "traits": "kum saati vücut hattı, uzun düz siyah saç, koyu kahverengi ten, dramatik kırmızı ruj, zarif iddialı elbise, gizemli bakış"
+  },
+  {
+    "name": "Serafina Alvarado",
+    "gender": "Kadın",
+    "age": 30,
+    "race": "Latin Amerikalı",
+    "traits": "kum saati vücut hattı, uzun dalgalı siyah saç, sıcak ten tonu, dramatik kırmızı ruj, zarif iddialı elbise, gizemli bakış"
+  },
+  {
+    "name": "Yumiko Kagawa",
+    "gender": "Kadın",
+    "age": 29,
+    "race": "Doğu Asyalı (Japon)",
+    "traits": "ince zarif yapı, düz siyah bob saç, açık ten, dramatik kırmızı ruj, zarif iddialı elbise, gizemli bakış"
+  },
+  {
+    "name": "Ilyena Voronova",
+    "gender": "Kadın",
+    "age": 32,
+    "race": "Doğu Avrupalı (Rus)",
+    "traits": "kum saati vücut hattı, uzun düz siyah saç, çok açık ten, dramatik kırmızı ruj, zarif iddialı elbise, buz gibi gizemli bakış"
+  },
+  {
+    "name": "Zephyrine Cole",
+    "gender": "Kadın",
+    "age": 26,
+    "race": "Beyaz Amerikalı",
+    "traits": "ince yapı, yarısı kazınmış çok renkli saç, çok sayıda piercing ve dövme, deri ceket, isyankar özgür ifade"
+  },
+  {
+    "name": "Naledi Mokoena",
+    "gender": "Kadın",
+    "age": 24,
+    "race": "Sahra Altı Afrikalı (Güney Afrika)",
+    "traits": "ince atletik yapı, kısa doğal saç dövme desenli traşlı yanlarla, koyu kahverengi ten, çok sayıda küpe, alternatif sokak modası"
+  },
+  {
+    "name": "Emiliano Bracamonte",
+    "gender": "Erkek",
+    "age": 22,
+    "race": "Latin Amerikalı",
+    "traits": "ince yapı, uzun dağınık siyah saç, sıcak ten tonu, kaykay tarzı bol giyim, kol dövmeleri, rahat isyankar ifade"
+  },
+  {
+    "name": "Yui Nakashiro",
+    "gender": "Non-binary",
+    "age": 23,
+    "race": "Doğu Asyalı (Japon)",
+    "traits": "ince yapı, kısa asimetrik mavi-gri saç, açık ten, siyah harness detaylı giyim, sivri aksesuarlar, sert modern görünüm"
+  },
+  {
+    "name": "Odalys Marsh",
+    "gender": "Kadın (Masc)",
+    "age": 28,
+    "race": "Afro-Amerikan",
+    "traits": "atletik kaslı yapı, kısa fade saç, koyu kahverengi ten, geniş omuzlar, dövmeler görünür, kendinden emin dik duruş"
+  },
+  {
+    "name": "Priya Bhandari",
+    "gender": "Kadın (Masc)",
+    "age": 26,
+    "race": "Güney Asyalı (Nepal/Hint)",
+    "traits": "atletik yapı, kısa siyah saç geriye taranmış, sıcak kahverengi ten, güçlü kaşlar, maskülen tarz giyim"
+  },
+  {
+    "name": "Solveig Thorne",
+    "gender": "Kadın (Masc)",
+    "age": 30,
+    "race": "İskandinav",
+    "traits": "uzun boylu atletik yapı, kısa açık sarı saç, açık ten, keskin çene hattı, maskülen tarz giyim, kendinden emin duruş"
+  },
+  {
+    "name": "Meiying Zhao",
+    "gender": "Kadın (Masc)",
+    "age": 25,
+    "race": "Doğu Asyalı (Çin)",
+    "traits": "ince atletik yapı, kısa siyah saç, açık ten, keskin elmacık kemikleri, maskülen tarz giyim, sakin kendinden emin ifade"
+  },
+  {
+    "name": "Olivia Brown",
+    "gender": "Kadın",
+    "age": 20,
+    "race": "Batı Avrupalı (İngiliz/Alman)",
+    "traits": "slender build, sandy blonde saç, hazel göz, fair with light freckling ten tonu, gentle laugh lines, creative ifade"
+  }
+]

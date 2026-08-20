@@ -20,6 +20,7 @@ const pulseRoutes = require('./routes/pulses');
 const mapRoutes = require('./routes/map');
 const checkInRoutes = require('./routes/checkIns');
 const tribeRoutes = require('./routes/tribes');
+const billingRoutes = require('./routes/billing');
 const wellKnownRoutes = require('./routes/wellKnown');
 const { runMigrations } = require('./db/migrate');
 const {
@@ -67,6 +68,7 @@ async function bootstrap() {
   app.use('/map', mapRoutes);
   app.use('/check-ins', checkInRoutes);
   app.use('/tribes', tribeRoutes);
+  app.use('/billing', billingRoutes);
   // Deep-link hosting (AASA / assetlinks / /u landing) on the API host.
   app.use(wellKnownRoutes);
 

@@ -43,6 +43,12 @@ const friendshipStreaksCache = new TtlCache({
   defaultTtlMs: 30_000,
 });
 
+const profileViewersCache = new TtlCache({
+  name: 'profile_viewers',
+  max: 2_000,
+  defaultTtlMs: 45_000,
+});
+
 const placesNearbyCache = new TtlCache({
   name: 'places_nearby',
   max: 2_000,
@@ -66,6 +72,10 @@ function publicProfileKey(viewerId, username) {
   return `prof:${viewerId}:${String(username || '').toLowerCase()}`;
 }
 
+function publicProfileByIdKey(viewerId, userId) {
+  return `profid:${viewerId}:${String(userId || '').trim()}`;
+}
+
 function mapNearbyKey({ viewerId, filter, lat, lng, radiusKm, limit }) {
   return [
     'map',
@@ -86,6 +96,10 @@ function friendshipStreaksKey(userId) {
   return `streaks:${userId}`;
 }
 
+function profileViewersKey(userId, { limit = 50, offset = 0 } = {}) {
+  return `viewers:${userId}:${limit}:${offset}`;
+}
+
 function placesNearbyKey({ lat, lng, radiusMeters, limit }) {
   return [
     'places',
@@ -102,6 +116,7 @@ function invalidateUser(userId) {
   meCache.delete(meKey(userId));
   storyFeedCache.delete(storyFeedKey(userId));
   friendshipStreaksCache.delete(friendshipStreaksKey(userId));
+  profileViewersCache.deletePrefix(`viewers:${userId}:`);
   publicProfileCache.deletePrefix(`prof:${userId}:`);
   // Profiles of this user as seen by others: prof:{any}:{username} — callers
   // that know the username should also call invalidateUsername.
@@ -134,6 +149,11 @@ function invalidateStampsCatalog() {
   stampsCatalogCache.clear();
 }
 
+function invalidateProfileViewers(userId) {
+  if (!userId) return;
+  profileViewersCache.deletePrefix(`viewers:${userId}:`);
+}
+
 module.exports = {
   meCache,
   storyFeedCache,
@@ -142,13 +162,16 @@ module.exports = {
   stampsCatalogCache,
   friendshipStreaksCache,
   placesNearbyCache,
+  profileViewersCache,
   meKey,
   storyFeedKey,
   publicProfileKey,
+  publicProfileByIdKey,
   mapNearbyKey,
   stampsCatalogKey,
   friendshipStreaksKey,
   placesNearbyKey,
+  profileViewersKey,
   roundCoord,
   invalidateUser,
   invalidateUsername,
@@ -156,4 +179,5 @@ module.exports = {
   invalidateMapNearby,
   invalidatePlacesNearby,
   invalidateStampsCatalog,
+  invalidateProfileViewers,
 };

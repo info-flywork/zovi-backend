@@ -4,6 +4,7 @@ const { FollowRepository } = require('./FollowRepository');
 const { NotificationRepository } = require('./NotificationRepository');
 const { OneSignalService } = require('./OneSignalService');
 const { UserRepository } = require('./UserRepository');
+const { isMockUserId } = require('./MockChatService');
 const { logger } = require('../utils/logger');
 
 const PUSH_COPY = {
@@ -262,6 +263,8 @@ class NotificationService {
     lastMessageAt = null,
   }) {
     if (!recipientId || !senderId || recipientId === senderId) return null;
+    // Mock accounts are not real devices — never push / inbox them.
+    if (isMockUserId(recipientId)) return null;
     const convId = String(conversationId || '').trim();
     if (!convId) return null;
 
