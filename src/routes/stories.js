@@ -388,6 +388,9 @@ router.post('/:id/like', requireFirebaseAuth, async (req, res, next) => {
       });
     }
 
+    // likedByMe is viewer-specific — drop this viewer's cached home feed.
+    storyFeedCache.delete(storyFeedKey(req.user.id));
+
     return res.json({
       success: true,
       data: { story: story ? story.toJSON() : existing.toJSON() },
@@ -407,6 +410,8 @@ router.delete('/:id/like', requireFirebaseAuth, async (req, res, next) => {
     if (!existing) return undefined;
 
     const updated = await stories.unlike(id, req.user.id);
+    // likedByMe is viewer-specific — drop this viewer's cached home feed.
+    storyFeedCache.delete(storyFeedKey(req.user.id));
     return res.json({
       success: true,
       data: { story: updated ? updated.toJSON() : existing.toJSON() },

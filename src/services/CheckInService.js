@@ -210,8 +210,8 @@ class CheckInService {
         `INSERT INTO check_ins (
            id, user_id, venue_id, place_name, caption, lat, lng,
            photo_privacy, photo_urls_json, coins_earned, is_venue_founder, is_first_ever,
-           offered_stamp_id, is_active_on_map
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+           offered_stamp_id, is_active_on_map, checked_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, UTC_TIMESTAMP(3))`,
         [
           checkInId,
           userId,

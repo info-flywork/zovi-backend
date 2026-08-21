@@ -4,6 +4,8 @@ const { logger } = require('../utils/logger');
 const { UsernameRepository } = require('./UsernameRepository');
 
 const USERNAME_MAX = 15;
+/** Seeded mock handles may be longer (DB column VARCHAR(25)). */
+const USERNAME_LOOKUP_MAX = 25;
 const USERNAME_MIN = 3;
 const CHECK_CACHE_TTL_MS = 10_000;
 const CHECK_CACHE_MAX = 500;
@@ -14,6 +16,15 @@ function normalizeUsername(raw) {
     .toLowerCase()
     .replace(/[^a-z0-9_]/g, '')
     .slice(0, USERNAME_MAX);
+}
+
+/** Public profile / by-username resolve — do not truncate below DB length. */
+function normalizeUsernameLookup(raw) {
+  return String(raw || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_]/g, '')
+    .slice(0, USERNAME_LOOKUP_MAX);
 }
 
 function isValidUsername(username) {
@@ -157,7 +168,9 @@ class UsernameService {
 module.exports = {
   UsernameService,
   normalizeUsername,
+  normalizeUsernameLookup,
   isValidUsername,
   USERNAME_MAX,
+  USERNAME_LOOKUP_MAX,
   USERNAME_MIN,
 };

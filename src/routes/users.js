@@ -7,6 +7,7 @@ const { requireFirebaseAuth, authService } = require('../middleware/auth');
 const {
   UsernameService,
   normalizeUsername,
+  normalizeUsernameLookup,
 } = require('../services/UsernameService');
 const { AccountDeletionService } = require('../services/AccountDeletionService');
 const { BunnyStorageService } = require('../services/BunnyStorageService');
@@ -151,7 +152,7 @@ async function resolveVisibleProfileForViewer(req, res, profile) {
  * Sends the error response and returns null on failure.
  */
 async function resolveVisibleProfileOrRespond(req, res, usernameParam) {
-  const normalized = normalizeUsername(usernameParam);
+  const normalized = normalizeUsernameLookup(usernameParam);
   if (!normalized) {
     res.status(400).json({
       success: false,
@@ -334,7 +335,7 @@ router.get('/by-username/:username/stamps', requireFirebaseAuth, async (req, res
 });
 router.get('/by-username/:username', requireFirebaseAuth, async (req, res, next) => {
   try {
-    const normalized = normalizeUsername(req.params.username);
+    const normalized = normalizeUsernameLookup(req.params.username);
     const cacheKey = publicProfileKey(req.user.id, normalized);
     const cached = publicProfileCache.get(cacheKey);
     if (cached !== undefined) {
@@ -508,6 +509,7 @@ router.patch('/me/profile', requireFirebaseAuth, async (req, res, next) => {
       bio,
       locationText,
       accountPrivacy,
+      preferredLanguage,
     } = req.body || {};
 
     let normalizedUsername;
@@ -582,6 +584,10 @@ router.patch('/me/profile', requireFirebaseAuth, async (req, res, next) => {
       bio: bio !== undefined ? String(bio).trim() : undefined,
       locationText,
       accountPrivacy: normalizedPrivacy,
+      preferredLanguage:
+        preferredLanguage !== undefined
+          ? String(preferredLanguage).trim()
+          : undefined,
     });
 
     logger.info('profile_updated', {

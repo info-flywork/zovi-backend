@@ -2,6 +2,7 @@
 
 const { randomUUID } = require('crypto');
 const { query, withTransaction } = require('../config/database');
+const { localizeMockNameFields } = require('../utils/mockNameI18n');
 
 class ChatRepository {
   orderedPair(userId1, userId2) {
@@ -137,6 +138,7 @@ class ChatRepository {
          ) AS peerAvatarUrl,
          IF(dp.conversation_id IS NULL, 1, 0) AS isGroup,
          COALESCE(t.id, '') AS tribeId,
+         COALESCE(t.name_key, '') AS peerNameKey,
          IF(
            dp.conversation_id IS NULL,
            COALESCE(
@@ -211,6 +213,7 @@ class ChatRepository {
          ) AS peerAvatarUrl,
          IF(dp.conversation_id IS NULL, 1, 0) AS isGroup,
          COALESCE(t.id, '') AS tribeId,
+         COALESCE(t.name_key, '') AS peerNameKey,
          IF(
            dp.conversation_id IS NULL,
            COALESCE(
@@ -523,6 +526,16 @@ class ChatRepository {
 
   mapConversationRow(row) {
     if (!row) return null;
+    const peer = localizeMockNameFields({
+      userId: row.peerUserId,
+      name: row.peerName || '',
+      username: row.peerUsername || '',
+      avatarUrl: row.peerAvatarUrl || '',
+      isGroup: Boolean(row.isGroup),
+      tribeId: row.tribeId || '',
+      nameKey: row.peerNameKey || '',
+      memberCount: Number(row.memberCount || 0),
+    });
     return {
       id: row.conversationId,
       folder: row.folder,
@@ -530,21 +543,13 @@ class ChatRepository {
       lastMessageAt: row.lastMessageAt,
       lastMessagePreview: row.lastMessagePreview || '',
       lastMessageSenderId: row.lastMessageSenderId || null,
-      peer: {
-        userId: row.peerUserId,
-        name: row.peerName || '',
-        username: row.peerUsername || '',
-        avatarUrl: row.peerAvatarUrl || '',
-        isGroup: Boolean(row.isGroup),
-        tribeId: row.tribeId || '',
-        memberCount: Number(row.memberCount || 0),
-      },
+      peer,
     };
   }
 
   mapMessageRow(row) {
     if (!row) return null;
-    return {
+    return localizeMockNameFields({
       id: row.id,
       conversationId: row.conversationId,
       senderId: row.senderId,
@@ -557,7 +562,7 @@ class ChatRepository {
       senderName: row.senderName || row.senderUsername || '',
       senderUsername: row.senderUsername || '',
       senderAvatarUrl: row.senderAvatarUrl || '',
-    };
+    }, { userIdKey: 'senderId' });
   }
 }
 

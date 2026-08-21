@@ -1,5 +1,8 @@
 'use strict';
 
+const { isMockUserId, localizedMockName } = require('../utils/mockNameI18n');
+const { getRequestLocale } = require('../utils/requestContext');
+
 class UserProfile {
   constructor(row) {
     this.userId = row.user_id;
@@ -41,9 +44,12 @@ class UserProfile {
   }
 
   toJSON() {
+    const fullName = isMockUserId(this.userId)
+      ? (localizedMockName(this.userId, getRequestLocale()) || this.fullName)
+      : this.fullName;
     return {
       userId: this.userId,
-      fullName: this.fullName,
+      fullName,
       username: this.username,
       avatarUrl: this.avatarUrl,
       bio: this.bio,

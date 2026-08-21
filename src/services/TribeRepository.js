@@ -8,6 +8,7 @@ const {
   haversineKm,
 } = require('../utils/istanbulDistricts');
 const { normalizeCheckInCategory } = require('./CheckInService');
+const { localizeMockNameFields } = require('../utils/mockNameI18n');
 
 const DISTRICT_CENTROID = new Map(DISTRICTS.map((d) => [d.key, d]));
 
@@ -466,7 +467,7 @@ class TribeRepository {
       const userId = String(row.userId);
       const fullName = String(row.fullName || '').trim();
       const username = String(row.username || '').trim();
-      return {
+      return localizeMockNameFields({
         userId,
         name: fullName || username || 'User',
         username,
@@ -474,7 +475,7 @@ class TribeRepository {
         streakCount: Number(row.streakCount) || 0,
         isMe: userId === viewerId,
         joinedAt: row.joinedAt || null,
-      };
+      });
     });
   }
 

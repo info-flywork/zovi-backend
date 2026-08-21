@@ -10,6 +10,8 @@ const {
   UserSettings,
   ProfileLink,
 } = require('../models');
+const { localizedMockName, isMockUserId } = require('../utils/mockNameI18n');
+const { getRequestLocale } = require('../utils/requestContext');
 
 class UserRepository {
   async findByFirebaseUid(firebaseUid, { includeDeleted = false } = {}) {
@@ -265,9 +267,22 @@ class UserRepository {
     return OAuthIdentity.fromRow(rows[0]);
   }
 
+  async updatePreferredLanguage(userId, preferredLanguage = 'en') {
+    const { normalizeLocale } = require('../utils/mockNameI18n');
+    const lang = normalizeLocale(preferredLanguage);
+    await this.ensureSettings(userId, lang);
+    await query(
+      `UPDATE user_settings
+       SET preferred_language = ?
+       WHERE user_id = ?`,
+      [lang, userId],
+    );
+    return lang;
+  }
+
   async updateProfile(
     userId,
-    { fullName, username, birthDate, bio, locationText, accountPrivacy },
+    { fullName, username, birthDate, bio, locationText, accountPrivacy, preferredLanguage },
   ) {
     await withTransaction(async (conn) => {
       if (username !== undefined && username !== null && username !== '') {
@@ -298,6 +313,10 @@ class UserRepository {
         ],
       );
     });
+
+    if (preferredLanguage !== undefined && preferredLanguage !== null) {
+      await this.updatePreferredLanguage(userId, preferredLanguage);
+    }
 
     return this.getProfile(userId);
   }
@@ -682,7 +701,7 @@ class UserRepository {
     if (!ownerId) return [];
     const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 200);
     const safeOffset = Math.max(Number(offset) || 0, 0);
-    return query(
+    const rows = await query(
       `SELECT
          pv.viewer_user_id AS user_id,
          COALESCE(up.username, '') AS username,
@@ -707,6 +726,13 @@ class UserRepository {
        LIMIT ? OFFSET ?`,
       [ownerId, ownerId, ownerId, safeLimit, safeOffset],
     );
+    const locale = getRequestLocale();
+    return rows.map((row) => {
+      if (isMockUserId(row.user_id)) {
+        row.full_name = localizedMockName(row.user_id, locale) || row.full_name;
+      }
+      return row;
+    });
   }
 
   async revealProfileViewer(ownerUserId, viewerUserId) {

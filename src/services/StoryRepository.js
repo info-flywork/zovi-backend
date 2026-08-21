@@ -3,6 +3,7 @@
 const { randomUUID } = require('crypto');
 const { query } = require('../config/database');
 const { Story } = require('../models/Story');
+const { localizeMockNameFields } = require('../utils/mockNameI18n');
 
 const SELECT_WITH_MUSIC = `
   SELECT
@@ -217,13 +218,13 @@ class StoryRepository {
       const story = Story.fromRow(row);
       let group = byUser.get(row.user_id);
       if (!group) {
-        group = {
+        group = localizeMockNameFields({
           userId: row.user_id,
           name: row.author_name || row.author_username || '',
           username: row.author_username || '',
           avatarUrl: row.author_avatar_url || '',
           stories: [],
-        };
+        });
         byUser.set(row.user_id, group);
       }
       group.stories.push(story);
@@ -303,12 +304,20 @@ class StoryRepository {
       ],
     );
 
-    return rows.map((row) => ({
-      story: Story.fromRow(row),
-      authorName: row.author_name || row.author_username || '',
-      authorUsername: row.author_username || '',
-      authorAvatarUrl: row.author_avatar_url || '',
-    }));
+    return rows.map((row) => {
+      const localized = localizeMockNameFields({
+        userId: row.user_id,
+        authorName: row.author_name || row.author_username || '',
+        authorUsername: row.author_username || '',
+        authorAvatarUrl: row.author_avatar_url || '',
+      });
+      return {
+        story: Story.fromRow(row),
+        authorName: localized.authorName,
+        authorUsername: localized.authorUsername || row.author_username || '',
+        authorAvatarUrl: localized.authorAvatarUrl || row.author_avatar_url || '',
+      };
+    });
   }
 
   async markViewed(storyId, viewerUserId) {

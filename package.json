@@ -12,6 +12,7 @@
     "seed:mock-chars": "node src/scripts/seed-mock-chars.js",
     "seed:mock-tribes": "node src/scripts/seed-mock-tribe-members.js",
     "seed:mock-voices": "node src/scripts/seed-mock-voices.js",
+    "seed:mock-follows": "node src/scripts/seed-mock-follows.js",
     "tribes:form": "node src/scripts/form-tribes.js",
     "health": "node -e \"require('./src/config/database').healthCheck().then(r=>{console.log(r);process.exit(r.ok?0:1)}).catch(e=>{console.error(e);process.exit(1)})\""
   },

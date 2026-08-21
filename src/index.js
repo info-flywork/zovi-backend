@@ -6,6 +6,7 @@ const { healthCheck, closePool } = require('./config/database');
 const { initFirebase } = require('./config/firebase');
 const { logger } = require('./utils/logger');
 const { requestLogger } = require('./middleware/requestLogger');
+const { requestContextMiddleware } = require('./utils/requestContext');
 const { notFoundHandler, errorHandler } = require('./middleware/errorHandler');
 const healthRoutes = require('./routes/health');
 const authRoutes = require('./routes/auth');
@@ -46,6 +47,7 @@ async function bootstrap() {
   const app = express();
   app.set('trust proxy', 1);
   app.use(express.json({ limit: '2mb' }));
+  app.use(requestContextMiddleware);
   app.use(requestLogger);
 
   app.get('/', (_req, res) => {

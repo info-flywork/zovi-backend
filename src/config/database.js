@@ -21,8 +21,13 @@ function getPool() {
     queueLimit: 0,
     enableKeepAlive: true,
     keepAliveInitialDelay: 10_000,
+    // DATETIME columns are stored/read as UTC wall-clock.
     timezone: 'Z',
     dateStrings: false,
+  });
+
+  pool.on('connection', (connection) => {
+    connection.query("SET time_zone = '+00:00'");
   });
 
   logger.info('mysql_pool_created', {

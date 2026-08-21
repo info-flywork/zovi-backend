@@ -1,6 +1,8 @@
 'use strict';
 
 const { query } = require('../config/database');
+const { localizedMockName, isMockUserId } = require('../utils/mockNameI18n');
+const { getRequestLocale } = require('../utils/requestContext');
 
 /** Last-known map pin stays visible this long after the last location sync.
  *  Friends should remain on the map even when the app is closed — not only
@@ -86,7 +88,7 @@ class MapPresenceRepository {
     return {
       userId: row.user_id,
       username: hideIdentity ? '' : (row.username || ''),
-      fullName: hideIdentity ? 'Anonim' : (row.full_name || row.username || ''),
+      fullName: hideIdentity ? 'Anonim' : (isMockUserId(row.user_id) ? (localizedMockName(row.user_id, getRequestLocale()) || row.full_name || row.username || '') : (row.full_name || row.username || '')),
       avatarUrl: hideIdentity ? '' : (row.avatar_url || ''),
       streakCount: hideIdentity ? 0 : Number(row.pair_streak_count || 0),
       lat: Number(row.lat),

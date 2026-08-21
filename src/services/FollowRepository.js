@@ -2,6 +2,8 @@
 
 const { randomUUID } = require('crypto');
 const { query } = require('../config/database');
+const { localizedMockName, isMockUserId } = require('../utils/mockNameI18n');
+const { getRequestLocale } = require('../utils/requestContext');
 
 class FollowRepository {
   async isFollowing(followerId, followingId) {
@@ -248,10 +250,20 @@ class FollowRepository {
     return result.affectedRows > 0;
   }
 
+  
+  _mapFollowUserRow(row) {
+    if (!row) return row;
+    const userId = row.user_id;
+    const fullName = isMockUserId(userId)
+      ? (localizedMockName(userId, getRequestLocale()) || row.full_name)
+      : row.full_name;
+    return { ...row, full_name: fullName };
+  }
+
   async listFollowers(userId, { limit = 50, offset = 0 } = {}) {
     const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
     const safeOffset = Math.max(Number(offset) || 0, 0);
-    return query(
+    const rows = await query(
       `SELECT up.user_id AS user_id,
               up.username,
               up.full_name,
@@ -263,12 +275,13 @@ class FollowRepository {
        LIMIT ? OFFSET ?`,
       [userId, safeLimit, safeOffset],
     );
+    return rows.map((r) => this._mapFollowUserRow(r));
   }
 
   async listFollowing(userId, { limit = 50, offset = 0 } = {}) {
     const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
     const safeOffset = Math.max(Number(offset) || 0, 0);
-    return query(
+    const rows = await query(
       `SELECT up.user_id AS user_id,
               up.username,
               up.full_name,
@@ -280,6 +293,7 @@ class FollowRepository {
        LIMIT ? OFFSET ?`,
       [userId, safeLimit, safeOffset],
     );
+    return rows.map((r) => this._mapFollowUserRow(r));
   }
 }
 

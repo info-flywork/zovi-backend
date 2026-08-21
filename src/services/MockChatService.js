@@ -3,6 +3,12 @@
 const { query } = require('../config/database');
 const { logger } = require('../utils/logger');
 const { MockAiService } = require('./MockAiService');
+const {
+  localizedMockName,
+  allLocalizedNamesForUser,
+  normalizeLocale,
+} = require('../utils/mockNameI18n');
+const { getRequestLocale } = require('../utils/requestContext');
 
 /** Mock character user ids from `seed-mock-chars.js`. */
 const MOCK_USER_ID_PREFIX = 'f0c4a000-';
@@ -91,6 +97,7 @@ class MockChatService {
     if (existing) clearTimeout(existing);
 
     const wait = delayMs(1800, 3600);
+    const localePromise = this._localeForUser(senderId);
 
     // Pick once so typing dots and actual replies use the same people.
     const respondersPromise = this._pickGroupResponders(
@@ -101,8 +108,9 @@ class MockChatService {
 
     respondersPromise
       .then(async (responders) => {
+        const locale = await localePromise;
         for (const mockUserId of responders.slice(0, 2)) {
-          const persona = await this._loadPersona(mockUserId);
+          const persona = await this._loadPersona(mockUserId, locale);
           this.chatService?.setTypingPresence(
             conversationId,
             {
@@ -141,6 +149,7 @@ class MockChatService {
               inboundType,
               inboundBody,
               realUserId: senderId,
+              locale: await localePromise,
             });
           }
         })
@@ -156,28 +165,23 @@ class MockChatService {
   }
 
   /**
-   * @mention → only that mock (rarely +1 bystander).
-   * Otherwise → 1–4 random mocks with a natural distribution.
+   * @mention / plain name → only that mock.
+   * Otherwise last mock who spoke (often the one who asked) is included first,
+   * then 0–3 extra randoms.
    */
   async _pickGroupResponders(conversationId, excludeUserId, inboundBody) {
-    const mentioned = await this._resolveMentionedMock(
+    const addressed = await this._resolveAddressedMock(
       conversationId,
       excludeUserId,
       inboundBody,
     );
 
-    if (mentioned) {
-      const picked = [mentioned];
-      // Occasional bystander, not a pile-on.
-      if (Math.random() < 0.18) {
-        const extra = await this._pickMockMember(
-          conversationId,
-          excludeUserId,
-          picked,
-        );
-        if (extra) picked.push(extra);
-      }
-      return picked;
+    if (addressed) {
+      logger.info('mock_chat_addressed_reply', {
+        conversationId,
+        mockUserId: addressed,
+      });
+      return [addressed];
     }
 
     const roll = Math.random();
@@ -186,6 +190,9 @@ class MockChatService {
       roll < 0.42 ? 1 : roll < 0.74 ? 2 : roll < 0.92 ? 3 : 4;
 
     const picked = [];
+    const lastMock = await this._lastMockSender(conversationId, excludeUserId);
+    if (lastMock) picked.push(lastMock);
+
     while (picked.length < want) {
       const next = await this._pickMockMember(
         conversationId,
@@ -198,11 +205,30 @@ class MockChatService {
     return picked;
   }
 
-  async _resolveMentionedMock(conversationId, excludeUserId, inboundBody) {
-    const handles = [
-      ...String(inboundBody || '').matchAll(/@([^\s@]+)/g),
-    ].map((m) => String(m[1] || '').trim().toLowerCase());
-    if (!handles.length) return null;
+  async _lastMockSender(conversationId, excludeUserId) {
+    const rows = await query(
+      `SELECT m.sender_id AS userId
+       FROM messages m
+       INNER JOIN users u ON u.id = m.sender_id
+       WHERE m.conversation_id = ?
+         AND m.deleted_at IS NULL
+         AND m.sender_id <> ?
+         AND u.firebase_uid LIKE ?
+       ORDER BY m.created_at DESC
+       LIMIT 1`,
+      [conversationId, excludeUserId, `${MOCK_FIREBASE_PREFIX}%`],
+    );
+    return rows[0]?.userId ? String(rows[0].userId) : null;
+  }
+
+  /**
+   * Resolve who the user is talking to:
+   * 1) @username / @FirstName
+   * 2) bare first name or full name as a whole word (e.g. "rebecca sen nasılsın")
+   */
+  async _resolveAddressedMock(conversationId, excludeUserId, inboundBody) {
+    const text = String(inboundBody || '').trim();
+    if (!text) return null;
 
     const rows = await query(
       `SELECT cm.user_id AS userId,
@@ -217,30 +243,66 @@ class MockChatService {
          AND u.firebase_uid LIKE ?`,
       [conversationId, excludeUserId, `${MOCK_FIREBASE_PREFIX}%`],
     );
+    if (!rows.length) return null;
 
-    for (const handle of handles) {
+    const lower = text.toLowerCase();
+    const handles = [
+      ...lower.matchAll(/@([^\s@]+)/g),
+    ].map((m) => String(m[1] || '').trim());
+
+    const aliasesByUser = new Map();
+    for (const row of rows) {
+      const uid = String(row.userId);
+      const aliases = new Set(allLocalizedNamesForUser(uid));
+      const username = String(row.username || '');
+      if (username) aliases.add(username);
+      aliasesByUser.set(uid, aliases);
+    }
+
+    const matchRow = (token) => {
+      const t = String(token || '').trim().toLowerCase();
+      if (t.length < 2) return null;
       for (const row of rows) {
         const username = String(row.username || '');
-        const fullName = String(row.fullName || '');
-        const first = fullName.split(/\s+/)[0] || '';
-        if (
-          (username && username === handle) ||
-          (first && first === handle) ||
-          (fullName && fullName.replace(/\s+/g, '') === handle)
-        ) {
+        if (username && (username === t || username.startsWith(`${t}_`))) {
           return String(row.userId);
         }
+        const aliases = aliasesByUser.get(String(row.userId)) || new Set();
+        if (aliases.has(t)) return String(row.userId);
+      }
+      return null;
+    };
+
+    for (const handle of handles) {
+      const hit = matchRow(handle);
+      if (hit) return hit;
+    }
+
+    // Bare names across all locale aliases (longest first).
+    const nameTokens = [];
+    for (const [userId, aliases] of aliasesByUser) {
+      for (const token of aliases) {
+        if (token.length >= 2) nameTokens.push({ token, userId });
       }
     }
+    nameTokens.sort((a, b) => b.token.length - a.token.length);
+
+    for (const { token, userId } of nameTokens) {
+      const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const re = new RegExp(`(^|[^\\p{L}\\p{N}_])${escaped}(?=$|[^\\p{L}\\p{N}_])`, 'iu');
+      if (re.test(lower)) return userId;
+    }
+
     return null;
   }
 
   _schedule(opts) {
-    const { key, conversationId, mockUserId } = opts;
+    const { key, conversationId, mockUserId, realUserId } = opts;
     const existing = this._timers.get(key);
     if (existing) clearTimeout(existing);
 
     const wait = delayMs();
+    const localePromise = this._localeForUser(realUserId);
     logger.info('mock_chat_dm_reply_scheduled', {
       conversationId,
       mockUserId,
@@ -248,7 +310,11 @@ class MockChatService {
     });
 
     // Show typing dots during the natural delay before the reply.
-    this._loadPersona(mockUserId)
+    localePromise
+      .then((locale) => {
+        opts.locale = locale;
+        return this._loadPersona(mockUserId, locale);
+      })
       .then((persona) => {
         this.chatService?.setTypingPresence(
           conversationId,
@@ -305,7 +371,19 @@ class MockChatService {
     return rows[0]?.userId ? String(rows[0].userId) : null;
   }
 
-  async _loadPersona(mockUserId) {
+  async _localeForUser(userId) {
+    if (!userId) return getRequestLocale('en');
+    const rows = await query(
+      `SELECT preferred_language AS lang
+       FROM user_settings
+       WHERE user_id = ?
+       LIMIT 1`,
+      [userId],
+    );
+    return normalizeLocale(rows[0]?.lang || getRequestLocale('en'));
+  }
+
+  async _loadPersona(mockUserId, locale) {
     const rows = await query(
       `SELECT full_name AS fullName,
               username,
@@ -318,8 +396,14 @@ class MockChatService {
       [mockUserId],
     );
     const row = rows[0] || {};
+    const loc = normalizeLocale(locale || getRequestLocale('en'));
+    const localized = localizedMockName(
+      mockUserId,
+      loc,
+      String(row.fullName || '').trim(),
+    );
     return {
-      name: String(row.fullName || row.username || 'Zovi').trim() || 'Zovi',
+      name: localized || String(row.fullName || row.username || 'Zovi').trim() || 'Zovi',
       username: String(row.username || '').trim(),
       location: String(row.location || '').trim(),
       avatarUrl: String(row.avatarUrl || '').trim(),
@@ -393,11 +477,15 @@ class MockChatService {
     inboundType,
     inboundBody,
     realUserId,
+    locale: localeOpt,
   }) {
     if (!this.chatService) return;
 
+    const locale =
+      localeOpt ||
+      (await this._localeForUser(realUserId));
     const [persona, history] = await Promise.all([
-      this._loadPersona(mockUserId),
+      this._loadPersona(mockUserId, locale),
       this._loadHistory(conversationId, mockUserId, realUserId),
     ]);
 

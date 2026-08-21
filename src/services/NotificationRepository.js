@@ -2,6 +2,7 @@
 
 const { randomUUID } = require('crypto');
 const { query } = require('../config/database');
+const { localizeMockNameFields } = require('../utils/mockNameI18n');
 
 class NotificationRepository {
   async create({
@@ -219,12 +220,12 @@ class NotificationRepository {
       createdAt: row.created_at,
       readAt: row.read_at,
       actor: row.actor_id
-        ? {
+        ? localizeMockNameFields({
             userId: row.actor_id,
             name: row.actor_name || '',
             username: row.actor_username || '',
             avatarUrl: row.actor_avatar_url || '',
-          }
+          })
         : null,
     };
   }
