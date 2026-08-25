@@ -421,4 +421,65 @@ router.delete('/:id/like', requireFirebaseAuth, async (req, res, next) => {
   }
 });
 
+/**
+ * DELETE /stories/:id
+ * Owner-only soft delete. Also soft-deletes the pulse created from this story.
+ */
+router.delete('/:id', requireFirebaseAuth, async (req, res, next) => {
+  try {
+    const id = String(req.params.id || '').trim();
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_ID', message: 'Story id required' },
+      });
+    }
+
+    const existing = await stories.findById(id);
+    if (!existing || existing.deletedAt || existing.userId !== req.user.id) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Story not found' },
+      });
+    }
+
+    const deleted = await stories.softDelete(id, req.user.id);
+    if (!deleted) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Story not found' },
+      });
+    }
+
+    try {
+      await pulses.softDeleteBySource('story', id, req.user.id);
+    } catch (pulseErr) {
+      logger.warn('story_pulse_delete_failed', {
+        userId: req.user.id,
+        storyId: id,
+        message: pulseErr.message,
+      });
+    }
+
+    try {
+      if (existing.storageKey) {
+        await bunny.deleteObject(existing.storageKey);
+      }
+    } catch (storageErr) {
+      logger.warn('story_storage_delete_failed', {
+        userId: req.user.id,
+        storyId: id,
+        message: storageErr.message,
+      });
+    }
+
+    invalidateStoryFeeds();
+    logger.info('story_deleted', { userId: req.user.id, storyId: id });
+
+    return res.json({ success: true, data: { deleted: true } });
+  } catch (err) {
+    return next(err);
+  }
+});
+
 module.exports = router;

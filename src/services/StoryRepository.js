@@ -379,6 +379,18 @@ class StoryRepository {
     return this.findById(storyId, { viewerUserId: userId });
   }
 
+  async softDelete(id, userId) {
+    const result = await query(
+      `UPDATE stories
+       SET deleted_at = CURRENT_TIMESTAMP(3)
+       WHERE id = ?
+         AND user_id = ?
+         AND deleted_at IS NULL`,
+      [id, userId],
+    );
+    return (result?.affectedRows ?? 0) > 0;
+  }
+
   async _attachViewerState(stories, viewerUserId) {
     const ids = stories.map((s) => s.id).filter(Boolean);
     if (ids.length === 0) return;

@@ -239,6 +239,20 @@ class PulseRepository {
       authorAvatarUrl: row.author_avatar_url || '',
     }));
   }
+
+  async softDeleteBySource(sourceType, sourceId, userId) {
+    if (!sourceType || !sourceId || !userId) return false;
+    const result = await query(
+      `UPDATE pulses
+       SET deleted_at = CURRENT_TIMESTAMP(3)
+       WHERE source_type = ?
+         AND source_id = ?
+         AND user_id = ?
+         AND deleted_at IS NULL`,
+      [sourceType, sourceId, userId],
+    );
+    return (result?.affectedRows ?? 0) > 0;
+  }
 }
 
 module.exports = { PulseRepository };
