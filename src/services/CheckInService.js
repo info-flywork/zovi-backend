@@ -302,22 +302,24 @@ class CheckInService {
     }
 
     // Tag notifications after commit — don't fail the check-in if push fails.
-    for (const taggedId of tags) {
-      try {
-        await this.notifications.notifyCheckInTagged({
-          recipientId: taggedId,
-          actorId: userId,
-          checkInId,
-          placeName: String(placeName).trim(),
-        });
-      } catch (err) {
-        logger.error('check_in_tag_notify_failed', {
-          err: err.message,
-          taggedId,
-          checkInId,
-        });
-      }
-    }
+    await Promise.all(
+      tags.map((taggedId) =>
+        this.notifications
+          .notifyCheckInTagged({
+            recipientId: taggedId,
+            actorId: userId,
+            checkInId,
+            placeName: String(placeName).trim(),
+          })
+          .catch((err) => {
+            logger.error('check_in_tag_notify_failed', {
+              err: err.message,
+              taggedId,
+              checkInId,
+            });
+          }),
+      ),
+    );
 
     logger.info('check_in_created', {
       userId,

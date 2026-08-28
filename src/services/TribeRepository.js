@@ -190,12 +190,6 @@ class TribeRepository {
     return map;
   }
 
-  async membersByTribe() {
-    return this.membersByTribeIds(
-      (await query(`SELECT id FROM tribes WHERE status = 'active'`)).map((row) => row.id),
-    );
-  }
-
   /**
    * Best streak of any type: distinct check-in days or friendship streaks.
    */
@@ -499,7 +493,7 @@ class TribeRepository {
     const [fresh, bestStreak, membersInfo, memberList] = await Promise.all([
       this.findById(tribe.id),
       this.bestStreak(userId),
-      this.membersByTribe(),
+      this.membersByTribeIds([tribe.id]),
       this.listMembers(tribe.id, userId),
     ]);
     const item = this._resolve(
@@ -571,7 +565,7 @@ class TribeRepository {
 
     const [fresh, members, memberList] = await Promise.all([
       this.findById(tribe.id),
-      this.membersByTribe(),
+      this.membersByTribeIds([tribe.id]),
       this.listMembers(tribe.id, userId),
     ]);
     const item = this._resolve(
@@ -631,7 +625,7 @@ class TribeRepository {
     const [fresh, bestStreak, members] = await Promise.all([
       this.findById(tribe.id),
       this.bestStreak(userId),
-      this.membersByTribe(),
+      this.membersByTribeIds([tribe.id]),
     ]);
     const item = this._resolve(
       fresh,
@@ -770,7 +764,7 @@ class TribeRepository {
     const [fresh, streakDays, members, memberList] = await Promise.all([
       this.findById(tribeId),
       this.categoryProgress(userId),
-      this.membersByTribe(),
+      this.membersByTribeIds([tribeId]),
       this.listMembers(tribeId, userId),
     ]);
     const item = this._resolve(
@@ -828,7 +822,7 @@ class TribeRepository {
       this.findById(id),
       this.categoryProgress(userId),
       this.membershipMap(userId),
-      this.membersByTribe(),
+      this.membersByTribeIds([id]),
       this.listMembers(id, userId),
     ]);
     const item = this._resolve(

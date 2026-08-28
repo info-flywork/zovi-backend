@@ -4,13 +4,16 @@ const express = require('express');
 const multer = require('multer');
 const { randomUUID } = require('crypto');
 const { requireFirebaseAuth } = require('../middleware/auth');
+const { uploadConcurrencyGuard } = require('../middleware/uploadConcurrency');
 const { BunnyStorageService } = require('../services/BunnyStorageService');
 const { StoryDraftRepository } = require('../services/StoryDraftRepository');
+const imageProcessor = require('../services/ImageProcessor');
 const { logger } = require('../utils/logger');
 
 const router = express.Router();
 const bunny = new BunnyStorageService();
 const drafts = new StoryDraftRepository();
+const uploadGuard = uploadConcurrencyGuard();
 
 const draftUpload = multer({
   storage: multer.memoryStorage(),
@@ -82,6 +85,7 @@ router.get('/', requireFirebaseAuth, async (req, res, next) => {
 router.post(
   '/',
   requireFirebaseAuth,
+  uploadGuard,
   draftUpload.single('image'),
   async (req, res, next) => {
     try {
@@ -94,13 +98,19 @@ router.post(
 
       const mediaType = mediaTypeFromUpload(req.file, req.body?.mediaType);
       const draftId = randomUUID();
-      const ext = extFromMime(req.file.mimetype, req.file.originalname);
+      let uploadBuffer = req.file.buffer;
+      let uploadMime = req.file.mimetype;
+      if (mediaType === 'image') {
+        const processed = await imageProcessor.resizeAndCompress(uploadBuffer, uploadMime);
+        uploadBuffer = processed.buffer;
+        uploadMime = processed.mimetype;
+      }
+      const ext = extFromMime(uploadMime, req.file.originalname);
       const storageKey = `drafts/${req.user.id}/${draftId}.${ext}`;
       const uploaded = await bunny.uploadBuffer(
-        req.file.buffer,
+        uploadBuffer,
         storageKey,
-        req.file.mimetype ||
-          (mediaType === 'video' ? 'video/mp4' : 'image/png'),
+        uploadMime || (mediaType === 'video' ? 'video/mp4' : 'image/png'),
       );
 
       const draft = await drafts.create({

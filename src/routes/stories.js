@@ -4,17 +4,21 @@ const express = require('express');
 const multer = require('multer');
 const { randomUUID } = require('crypto');
 const { requireFirebaseAuth } = require('../middleware/auth');
+const { uploadConcurrencyGuard } = require('../middleware/uploadConcurrency');
 const { BunnyStorageService } = require('../services/BunnyStorageService');
 const { StoryRepository } = require('../services/StoryRepository');
 const { UserRepository } = require('../services/UserRepository');
 const { PulseRepository } = require('../services/PulseRepository');
 const { NotificationService } = require('../services/NotificationService');
+const imageProcessor = require('../services/ImageProcessor');
+const videoThumbnails = require('../services/VideoThumbnailService');
 const { logger } = require('../utils/logger');
 const { invalidateStoryFeeds, storyFeedCache, storyFeedKey } = require('../cache/appCache');
 
 const router = express.Router();
 const bunny = new BunnyStorageService();
 const stories = new StoryRepository();
+const uploadGuard = uploadConcurrencyGuard();
 const users = new UserRepository();
 const pulses = new PulseRepository();
 const notifications = new NotificationService();
@@ -66,6 +70,7 @@ function mediaTypeFromUpload(file, hinted) {
 router.post(
   '/',
   requireFirebaseAuth,
+  uploadGuard,
   storyUpload.single('image'),
   async (req, res, next) => {
     try {
@@ -90,17 +95,46 @@ router.post(
 
       const mediaType = mediaTypeFromUpload(req.file, req.body.mediaType);
       const storyId = randomUUID();
-      const ext = extFromMime(req.file.mimetype, req.file.originalname);
+      let uploadBuffer = req.file.buffer;
+      let uploadMime = req.file.mimetype;
+      if (mediaType === 'image') {
+        const processed = await imageProcessor.resizeAndCompress(uploadBuffer, uploadMime);
+        uploadBuffer = processed.buffer;
+        uploadMime = processed.mimetype;
+      }
+      const ext = extFromMime(uploadMime, req.file.originalname);
       const storageKey = `stories/${req.user.id}/${storyId}.${ext}`;
       const uploaded = await bunny.uploadBuffer(
-        req.file.buffer,
+        uploadBuffer,
         storageKey,
-        req.file.mimetype || (mediaType === 'video' ? 'video/mp4' : 'image/png'),
+        uploadMime || (mediaType === 'video' ? 'video/mp4' : 'image/png'),
       );
+
+      let thumbnailUrl = null;
+      if (mediaType === 'video') {
+        const thumbBuffer = await videoThumbnails.extractThumbnail(uploadBuffer);
+        if (thumbBuffer) {
+          try {
+            const thumbUploaded = await bunny.uploadBuffer(
+              thumbBuffer,
+              `stories/${req.user.id}/${storyId}_thumb.jpg`,
+              'image/jpeg',
+            );
+            thumbnailUrl = thumbUploaded.url;
+          } catch (thumbErr) {
+            logger.warn('story_thumbnail_upload_failed', {
+              userId: req.user.id,
+              storyId,
+              message: thumbErr.message,
+            });
+          }
+        }
+      }
 
       const story = await stories.create({
         userId: req.user.id,
         mediaUrl: uploaded.url,
+        thumbnailUrl,
         storageKey: uploaded.storageKey,
         mediaType,
         audience,

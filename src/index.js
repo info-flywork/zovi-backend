@@ -1,6 +1,7 @@
 'use strict';
 
 const express = require('express');
+const compression = require('compression');
 const { env } = require('./config/env');
 const { healthCheck, closePool } = require('./config/database');
 const { initFirebase } = require('./config/firebase');
@@ -27,6 +28,10 @@ const { runMigrations } = require('./db/migrate');
 const {
   startTribeFormationSchedule,
 } = require('./services/tribeFormationSchedule');
+const {
+  startStoryCleanupSchedule,
+} = require('./services/storyCleanupSchedule');
+const { attachRealtimeServer } = require('./services/realtimeServer');
 
 async function bootstrap() {
   initFirebase();
@@ -46,6 +51,9 @@ async function bootstrap() {
 
   const app = express();
   app.set('trust proxy', 1);
+  // gzip/brotli JSON responses — feed/tribe/notification list payloads were
+  // going out uncompressed.
+  app.use(compression());
   app.use(express.json({ limit: '2mb' }));
   app.use(requestContextMiddleware);
   app.use(requestLogger);
@@ -88,6 +96,10 @@ async function bootstrap() {
 
   // Nightly algorithmic tribe formation (in-process, dependency-free).
   startTribeFormationSchedule();
+  // Daily purge of expired stories from MySQL + Bunny CDN.
+  startStoryCleanupSchedule();
+  // Push-only WS channel — REST stays the source of truth for send/read.
+  attachRealtimeServer(server);
 
   const shutdown = async (signal) => {
     logger.info('shutdown', { signal });

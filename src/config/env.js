@@ -21,6 +21,9 @@ const env = {
     database: required('DB_NAME'),
     user: required('DB_USER'),
     password: required('DB_PASSWORD'),
+    connectionLimit: Number(process.env.DB_CONNECTION_LIMIT || 25),
+    queueLimit: Number(process.env.DB_QUEUE_LIMIT || 50),
+    connectTimeoutMs: Number(process.env.DB_CONNECT_TIMEOUT_MS || 10_000),
   },
   firebase: {
     projectId: process.env.FIREBASE_PROJECT_ID || 'zovi-7a4a7',

@@ -9,6 +9,12 @@ const {
   invalidateUser,
   invalidateStoryFeeds,
   publicProfileCache,
+  followersCache,
+  followingCache,
+  followersKey,
+  followingKey,
+  invalidateFollowers,
+  invalidateFollowing,
 } = require('../cache/appCache');
 
 const router = express.Router();
@@ -30,6 +36,8 @@ router.post('/follow/:userId', requireFirebaseAuth, async (req, res, next) => {
     invalidateUser(req.user.id);
     invalidateUser(targetId);
     invalidateStoryFeeds();
+    invalidateFollowing(req.user.id);
+    invalidateFollowers(targetId);
     publicProfileCache.deletePrefix(`prof:${req.user.id}:`);
     return res.json({ success: true, data: result });
   } catch (err) {
@@ -53,6 +61,8 @@ router.delete('/follow/:userId', requireFirebaseAuth, async (req, res, next) => 
     invalidateUser(req.user.id);
     invalidateUser(targetId);
     invalidateStoryFeeds();
+    invalidateFollowing(req.user.id);
+    invalidateFollowers(targetId);
     publicProfileCache.deletePrefix(`prof:${req.user.id}:`);
     return res.json({ success: true, data: result });
   } catch (err) {
@@ -72,6 +82,8 @@ router.post(
       const result = await followService.acceptRequest(req.user.id, id);
       invalidateUser(req.user.id);
       invalidateStoryFeeds();
+      invalidateFollowers(req.user.id);
+      if (result?.fromUserId) invalidateFollowing(result.fromUserId);
       publicProfileCache.deletePrefix(`prof:${req.user.id}:`);
       return res.json({ success: true, data: result });
     } catch (err) {
@@ -215,6 +227,8 @@ router.delete(
     try {
       const followerId = String(req.params.userId || '').trim();
       const result = await followService.removeFollower(req.user.id, followerId);
+      invalidateFollowers(req.user.id);
+      invalidateFollowing(followerId);
       return res.json({ success: true, data: result });
     } catch (err) {
       if (err.status) {
@@ -242,10 +256,14 @@ router.get(
       const targetId = String(req.params.userId || '').trim();
       const limit = Number(req.query.limit) || 50;
       const offset = Number(req.query.offset) || 0;
-      const users = await followService.listFollowers(req.user.id, targetId, {
-        limit,
-        offset,
-      });
+      const users = await followersCache.getOrSet(
+        followersKey(req.user.id, targetId, { limit, offset }),
+        () =>
+          followService.listFollowers(req.user.id, targetId, {
+            limit,
+            offset,
+          }),
+      );
       return res.json({ success: true, data: { users } });
     } catch (err) {
       if (err.status) {
@@ -270,10 +288,14 @@ router.get(
       const targetId = String(req.params.userId || '').trim();
       const limit = Number(req.query.limit) || 50;
       const offset = Number(req.query.offset) || 0;
-      const users = await followService.listFollowing(req.user.id, targetId, {
-        limit,
-        offset,
-      });
+      const users = await followingCache.getOrSet(
+        followingKey(req.user.id, targetId, { limit, offset }),
+        () =>
+          followService.listFollowing(req.user.id, targetId, {
+            limit,
+            offset,
+          }),
+      );
       return res.json({ success: true, data: { users } });
     } catch (err) {
       if (err.status) {

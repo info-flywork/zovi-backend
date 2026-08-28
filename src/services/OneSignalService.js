@@ -4,6 +4,18 @@ const axios = require('axios');
 const { env } = require('../config/env');
 const { logger } = require('../utils/logger');
 
+const RETRY_DELAYS_MS = [300, 900];
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Retry only on transient failures — network errors or 5xx, never 4xx. */
+function isRetryable(err) {
+  const status = err.response?.status;
+  return !status || status >= 500;
+}
+
 class OneSignalService {
   get enabled() {
     return Boolean(env.oneSignal.appId && env.oneSignal.restApiKey);
@@ -47,17 +59,36 @@ class OneSignalService {
         payload.android_group = collapse;
       }
 
-      const response = await axios.post(
-        'https://api.onesignal.com/notifications',
-        payload,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Key ${env.oneSignal.restApiKey}`,
-          },
-          timeout: 10000,
-        },
-      );
+      let response;
+      let lastErr;
+      for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt += 1) {
+        try {
+          response = await axios.post(
+            'https://api.onesignal.com/notifications',
+            payload,
+            {
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Key ${env.oneSignal.restApiKey}`,
+              },
+              timeout: 10000,
+            },
+          );
+          lastErr = null;
+          break;
+        } catch (err) {
+          lastErr = err;
+          if (!isRetryable(err) || attempt === RETRY_DELAYS_MS.length) throw err;
+          logger.warn('onesignal_send_retry', {
+            userId,
+            attempt: attempt + 1,
+            status: err.response?.status,
+            message: err.message,
+          });
+          await sleep(RETRY_DELAYS_MS[attempt]);
+        }
+      }
+      if (lastErr) throw lastErr;
       // A 200 with `errors` means nothing was delivered — most often the user
       // has no push subscription yet (OneSignal.login not called, or the
       // device never registered with APNs/FCM).

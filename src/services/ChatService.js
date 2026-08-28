@@ -7,6 +7,8 @@ const { TribeRepository } = require('./TribeRepository');
 const { NotificationService } = require('./NotificationService');
 const { MockChatService, isMockUserId } = require('./MockChatService');
 const { chatTypingStore } = require('./ChatTypingStore');
+const { chatRepairCache, chatRepairKey } = require('../cache/appCache');
+const { realtimeHub } = require('./RealtimeHub');
 
 class ChatService {
   constructor({
@@ -49,7 +51,12 @@ class ChatService {
   }
 
   async listConversations(userId, { folder, limit, offset } = {}) {
-    await this.chat.promoteAllSenderInboxes(userId);
+    // Bulk repair is idempotent and only needs to run periodically, not on
+    // every poll (client re-lists conversations every ~2s).
+    await chatRepairCache.getOrSet(chatRepairKey(userId), async () => {
+      await this.chat.promoteAllSenderInboxes(userId);
+      return true;
+    });
     const rows = await this.chat.listForUser(userId, { folder, limit, offset });
     return rows.map((r) => this.chat.mapConversationRow(r));
   }
@@ -91,6 +98,14 @@ class ChatService {
       username: profile?.username || '',
       avatarUrl: profile?.avatarUrl || '',
     });
+    const others = await this.chat.listOtherMemberIds(id, viewerId);
+    for (const memberId of others) {
+      realtimeHub.emitToUser(memberId, {
+        type: 'typing',
+        conversationId: id,
+        userId: viewerId,
+      });
+    }
     return { ok: true };
   }
 
@@ -254,6 +269,10 @@ class ChatService {
       }
     }
 
+    // Fetched once — every recipient's push notification quotes the same
+    // sender, so a per-recipient lookup here was N identical queries.
+    const senderProfile = await this.users.getProfile(viewerId);
+
     for (const recipientId of others) {
       // Mock characters have no devices — skip inbox + OneSignal entirely.
       if (isMockUserId(recipientId)) continue;
@@ -269,6 +288,7 @@ class ChatService {
         .notifyChatMessage({
           recipientId,
           senderId: viewerId,
+          actorProfile: senderProfile,
           conversationId: id,
           preview,
           isRequest,
@@ -279,6 +299,10 @@ class ChatService {
           lastMessageAt: mapped?.createdAt || null,
         })
         .catch(() => {});
+      realtimeHub.emitToUser(recipientId, {
+        type: 'message:new',
+        conversationId: id,
+      });
     }
 
     // Mock characters reply like real people (DM + tribe chats).

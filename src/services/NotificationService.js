@@ -5,6 +5,7 @@ const { NotificationRepository } = require('./NotificationRepository');
 const { OneSignalService } = require('./OneSignalService');
 const { UserRepository } = require('./UserRepository');
 const { isMockUserId } = require('./MockChatService');
+const { realtimeHub } = require('./RealtimeHub');
 const { logger } = require('../utils/logger');
 
 const PUSH_COPY = {
@@ -84,6 +85,13 @@ class NotificationService {
     this.oneSignal = oneSignal;
     this.users = users;
     this.follows = follows;
+  }
+
+  /** WS "go refetch your inbox" ping — best-effort, never throws. */
+  _pingRealtime(recipientId) {
+    try {
+      realtimeHub.emitToUser(recipientId, { type: 'notification:new' });
+    } catch (_) {}
   }
 
   async notifyFollowRequest({ recipientId, actorId, requestId }) {
@@ -215,6 +223,7 @@ class NotificationService {
         thumbnailUrl: thumb || mapped?.thumbnailUrl || '',
         aggCount: nextCount,
       });
+      this._pingRealtime(recipientId);
       return mapped;
     }
 
@@ -247,12 +256,14 @@ class NotificationService {
       thumbnailUrl: thumb || '',
       aggCount: 1,
     });
+    this._pingRealtime(recipientId);
     return mapped;
   }
 
   async notifyChatMessage({
     recipientId,
     senderId,
+    actorProfile = null,
     conversationId,
     preview = '',
     isRequest = false,
@@ -286,7 +297,7 @@ class NotificationService {
       withinSeconds: windowSec,
     });
 
-    const actor = await this.users.getProfile(senderId);
+    const actor = actorProfile || (await this.users.getProfile(senderId));
     const actorName =
       actor?.fullName?.trim() ||
       actor?.username?.trim() ||
@@ -343,6 +354,7 @@ class NotificationService {
         aggCount: nextCount,
         lastMessageAt,
       });
+      this._pingRealtime(recipientId);
       return mapped;
     }
 
@@ -376,6 +388,7 @@ class NotificationService {
       aggCount: 1,
       lastMessageAt,
     });
+    this._pingRealtime(recipientId);
     return mapped;
   }
 
@@ -563,6 +576,7 @@ class NotificationService {
         logger.error('notify_push_failed', { err: err.message, type });
       });
 
+    this._pingRealtime(recipientId);
     return mapped;
   }
 

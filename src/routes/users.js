@@ -21,6 +21,7 @@ const { FollowRepository } = require('../services/FollowRepository');
 const { PulseRepository } = require('../services/PulseRepository');
 const { BlockService } = require('../services/BlockService');
 const { CheckInService } = require('../services/CheckInService');
+const imageProcessor = require('../services/ImageProcessor');
 const { logger } = require('../utils/logger');
 const {
   publicProfileCache,
@@ -638,13 +639,17 @@ router.post(
         });
       }
 
-      const ext = extensionForMime(req.file.mimetype);
+      const processed = await imageProcessor.resizeAndCompress(
+        req.file.buffer,
+        req.file.mimetype,
+      );
+      const ext = extensionForMime(processed.mimetype);
       const storageKey = `avatars/${req.user.id}/${randomUUID()}.${ext}`;
       const current = await authService.users.getProfile(req.user.id);
       const uploaded = await bunny.uploadBuffer(
-        req.file.buffer,
+        processed.buffer,
         storageKey,
-        req.file.mimetype,
+        processed.mimetype,
       );
 
       const profile = await authService.users.updateAvatar(req.user.id, {

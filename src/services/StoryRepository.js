@@ -5,9 +5,18 @@ const { query } = require('../config/database');
 const { Story } = require('../models/Story');
 const { localizeMockNameFields } = require('../utils/mockNameI18n');
 
+// Every column `Story` reads (see models/Story.js) — explicit so a future
+// wide/rarely-used column added to `stories` doesn't silently ride along on
+// every read.
+const STORY_COLUMNS = `
+    s.id, s.user_id, s.media_url, s.thumbnail_url, s.storage_key,
+    s.media_type, s.audience, s.music_track_id, s.music_clip_start_ms,
+    s.music_clip_duration_ms, s.view_count, s.created_at, s.expires_at,
+    s.deleted_at`;
+
 const SELECT_WITH_MUSIC = `
   SELECT
-    s.*,
+    ${STORY_COLUMNS},
     mt.audio_url AS music_audio_url,
     mt.title AS music_title,
     mt.artist AS music_artist,
@@ -20,6 +29,7 @@ class StoryRepository {
   async create({
     userId,
     mediaUrl,
+    thumbnailUrl = null,
     storageKey,
     mediaType = 'image',
     audience = 'friends_only',
@@ -30,14 +40,15 @@ class StoryRepository {
     const id = randomUUID();
     await query(
       `INSERT INTO stories (
-         id, user_id, media_url, storage_key, media_type, audience,
-         music_track_id, music_clip_start_ms, music_clip_duration_ms,
+         id, user_id, media_url, thumbnail_url, storage_key, media_type,
+         audience, music_track_id, music_clip_start_ms, music_clip_duration_ms,
          expires_at
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, DATE_ADD(UTC_TIMESTAMP(3), INTERVAL 24 HOUR))`,
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, DATE_ADD(UTC_TIMESTAMP(3), INTERVAL 24 HOUR))`,
       [
         id,
         userId,
         mediaUrl,
+        thumbnailUrl,
         storageKey,
         mediaType,
         audience,
@@ -121,7 +132,8 @@ class StoryRepository {
          AND s.deleted_at IS NULL
          AND s.expires_at > UTC_TIMESTAMP(3)
          AND (${audience.clause})
-       ORDER BY s.created_at ASC`,
+       ORDER BY s.created_at ASC
+       LIMIT 100`,
       [userId, ...audience.params],
     );
 
@@ -172,9 +184,15 @@ class StoryRepository {
    * Unviewed authors first, then most recent activity.
    */
   async listFriendFeed(viewerUserId) {
-    const rows = await query(
-      `SELECT
-         s.*,
+    // Cap the raw row set so a viewer following many very-active accounts
+    // can't pull an unbounded number of stories in one call. Fetch the most
+    // recent MAX_ROWS first (DESC), then reverse to the ascending order the
+    // grouping logic below expects.
+    const MAX_ROWS = 2000;
+    const rows = (
+      await query(
+        `SELECT
+         ${STORY_COLUMNS},
          mt.audio_url AS music_audio_url,
          mt.title AS music_title,
          mt.artist AS music_artist,
@@ -202,16 +220,19 @@ class StoryRepository {
            WHERE (b.blocker_id = ? AND b.blocked_id = s.user_id)
               OR (b.blocker_id = s.user_id AND b.blocked_id = ?)
          )
-       ORDER BY s.created_at ASC`,
-      [
-        viewerUserId,
-        viewerUserId,
-        viewerUserId,
-        viewerUserId,
-        viewerUserId,
-        viewerUserId,
-      ],
-    );
+       ORDER BY s.created_at DESC
+       LIMIT ?`,
+        [
+          viewerUserId,
+          viewerUserId,
+          viewerUserId,
+          viewerUserId,
+          viewerUserId,
+          viewerUserId,
+          MAX_ROWS,
+        ],
+      )
+    ).reverse();
 
     const byUser = new Map();
     for (const row of rows) {
@@ -268,7 +289,7 @@ class StoryRepository {
     const safeLimit = Math.min(Math.max(Number(limit) || 120, 1), 200);
     const rows = await query(
       `SELECT
-         s.*,
+         ${STORY_COLUMNS},
          mt.audio_url AS music_audio_url,
          mt.title AS music_title,
          mt.artist AS music_artist,

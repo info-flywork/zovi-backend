@@ -5,6 +5,7 @@ class Story {
     this.id = row.id;
     this.userId = row.user_id;
     this.mediaUrl = row.media_url;
+    this.thumbnailUrl = row.thumbnail_url ?? null;
     this.storageKey = row.storage_key;
     this.mediaType = row.media_type || 'image';
     this.audience = row.audience || 'friends_only';
@@ -46,6 +47,7 @@ class Story {
       id: this.id,
       userId: this.userId,
       mediaUrl: this.mediaUrl,
+      thumbnailUrl: this.thumbnailUrl,
       storageKey: this.storageKey,
       mediaType: this.mediaType,
       audience: this.audience,

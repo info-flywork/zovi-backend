@@ -6,6 +6,7 @@ const { randomUUID } = require('crypto');
 const { requireFirebaseAuth } = require('../middleware/auth');
 const { ChatService } = require('../services/ChatService');
 const { BunnyStorageService } = require('../services/BunnyStorageService');
+const imageProcessor = require('../services/ImageProcessor');
 const { logger } = require('../utils/logger');
 
 const router = express.Router();
@@ -78,13 +79,20 @@ router.post(
       }
 
       const mediaType = mediaTypeFromMime(req.file.mimetype);
-      const ext = extFromMime(req.file.mimetype, req.file.originalname);
+      let uploadBuffer = req.file.buffer;
+      let uploadMime = req.file.mimetype;
+      if (mediaType === 'image') {
+        const processed = await imageProcessor.resizeAndCompress(uploadBuffer, uploadMime);
+        uploadBuffer = processed.buffer;
+        uploadMime = processed.mimetype;
+      }
+      const ext = extFromMime(uploadMime, req.file.originalname);
       const fileId = randomUUID();
       const storageKey = `chat/${req.user.id}/${fileId}.${ext}`;
       const uploaded = await bunny.uploadBuffer(
-        req.file.buffer,
+        uploadBuffer,
         storageKey,
-        req.file.mimetype || 'application/octet-stream',
+        uploadMime || 'application/octet-stream',
       );
 
       logger.info('chat_media_uploaded', {

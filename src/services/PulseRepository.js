@@ -3,6 +3,15 @@
 const { randomUUID } = require('crypto');
 const { query } = require('../config/database');
 
+// Every column `mapRow` reads below — explicit so a future wide/rarely-used
+// column added to `pulses` doesn't silently ride along on every read.
+// `deleted_at` is deliberately excluded: it's only ever used in WHERE
+// filters, never read back out of a row.
+const PULSE_COLUMNS = `
+    p.id, p.user_id, p.media_url, p.storage_key, p.media_type,
+    p.source_type, p.source_id, p.audience, p.place_name, p.lat, p.lng,
+    p.caption, p.like_count, p.view_count, p.created_at, p.expires_at`;
+
 const ENSURE_PULSE_LIKES_SQL = `
   CREATE TABLE IF NOT EXISTS pulse_likes (
     pulse_id CHAR(36) NOT NULL,
@@ -58,8 +67,9 @@ class PulseRepository {
   async findBySource(sourceType, sourceId) {
     if (!sourceType || !sourceId) return null;
     const rows = await query(
-      `SELECT * FROM pulses
-       WHERE source_type = ? AND source_id = ? AND deleted_at IS NULL
+      `SELECT ${PULSE_COLUMNS}
+       FROM pulses p
+       WHERE p.source_type = ? AND p.source_id = ? AND p.deleted_at IS NULL
        LIMIT 1`,
       [sourceType, sourceId],
     );
@@ -124,7 +134,7 @@ class PulseRepository {
     await this.ensureLikesTable();
     const rows = await query(
       `SELECT
-         p.*,
+         ${PULSE_COLUMNS},
          EXISTS(
            SELECT 1 FROM pulse_likes pl
            WHERE pl.pulse_id = p.id AND pl.user_id = ?
@@ -189,7 +199,7 @@ class PulseRepository {
         : `p.audience = 'public'`;
     const rows = await query(
       `SELECT
-         p.*,
+         ${PULSE_COLUMNS},
          EXISTS(
            SELECT 1 FROM pulse_likes pl
            WHERE pl.pulse_id = p.id AND pl.user_id = ?
@@ -209,7 +219,7 @@ class PulseRepository {
     const safeLimit = Math.min(Math.max(Number(limit) || 120, 1), 200);
     const rows = await query(
       `SELECT
-         p.*,
+         ${PULSE_COLUMNS},
          COALESCE(up.full_name, '') AS author_name,
          COALESCE(up.username, '') AS author_username,
          COALESCE(up.avatar_url, '') AS author_avatar_url,

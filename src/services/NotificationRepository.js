@@ -4,6 +4,15 @@ const { randomUUID } = require('crypto');
 const { query } = require('../config/database');
 const { localizeMockNameFields } = require('../utils/mockNameI18n');
 
+// Every column `mapRow` reads below — explicit so a future wide/rarely-used
+// column added to `notifications` doesn't silently ride along on every
+// read. `deleted_at` is deliberately excluded: only ever used in WHERE
+// filters, never read back out of a row.
+const NOTIFICATION_COLUMNS = `
+    n.id, n.recipient_id, n.actor_id, n.type, n.object_type, n.object_id,
+    n.thumbnail_url, n.agg_count, n.title_key, n.body_key, n.payload_json,
+    n.action, n.created_at, n.read_at`;
+
 class NotificationRepository {
   async create({
     recipientId,
@@ -45,7 +54,7 @@ class NotificationRepository {
 
   async findById(id) {
     const rows = await query(
-      `SELECT n.*,
+      `SELECT ${NOTIFICATION_COLUMNS},
               up.full_name AS actor_name,
               up.username AS actor_username,
               up.avatar_url AS actor_avatar_url
@@ -62,7 +71,7 @@ class NotificationRepository {
     const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
     const safeOffset = Math.max(Number(offset) || 0, 0);
     return query(
-      `SELECT n.*,
+      `SELECT ${NOTIFICATION_COLUMNS},
               up.full_name AS actor_name,
               up.username AS actor_username,
               up.avatar_url AS actor_avatar_url
@@ -120,7 +129,7 @@ class NotificationRepository {
     // MySQL prepared statements reject `INTERVAL ? SECOND` — interpolate the
     // clamped integer only.
     const rows = await query(
-      `SELECT n.*
+      `SELECT ${NOTIFICATION_COLUMNS}
        FROM notifications n
        WHERE n.recipient_id = ?
          AND n.type = ?

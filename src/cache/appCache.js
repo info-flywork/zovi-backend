@@ -55,6 +55,29 @@ const placesNearbyCache = new TtlCache({
   defaultTtlMs: 15 * 60_000,
 });
 
+/**
+ * Gates ChatRepository.promoteAllSenderInboxes — a bulk repair UPDATE that's
+ * cheap to skip on repeat polls (client re-lists conversations every ~2s).
+ * Correctness only needs this to eventually run, not on every single call.
+ */
+const chatRepairCache = new TtlCache({
+  name: 'chat_repair',
+  max: 5_000,
+  defaultTtlMs: 30_000,
+});
+
+const followersCache = new TtlCache({
+  name: 'followers',
+  max: 3_000,
+  defaultTtlMs: 30_000,
+});
+
+const followingCache = new TtlCache({
+  name: 'following',
+  max: 3_000,
+  defaultTtlMs: 30_000,
+});
+
 /** ~110m grid — reduces cache fragmentation for nearby map queries. */
 function roundCoord(value) {
   return Number(Number(value).toFixed(3));
@@ -98,6 +121,31 @@ function friendshipStreaksKey(userId) {
 
 function profileViewersKey(userId, { limit = 50, offset = 0 } = {}) {
   return `viewers:${userId}:${limit}:${offset}`;
+}
+
+function chatRepairKey(userId) {
+  return `repair:${userId}`;
+}
+
+/** Followers/following are viewer-scoped (per-row relationship flags). */
+function followersKey(viewerId, targetId, { limit = 50, offset = 0 } = {}) {
+  return `followers:${targetId}:${viewerId}:${limit}:${offset}`;
+}
+
+function followingKey(viewerId, targetId, { limit = 50, offset = 0 } = {}) {
+  return `following:${targetId}:${viewerId}:${limit}:${offset}`;
+}
+
+/** Invalidate every cached page of `userId`'s followers list. */
+function invalidateFollowers(userId) {
+  if (!userId) return;
+  followersCache.deletePrefix(`followers:${userId}:`);
+}
+
+/** Invalidate every cached page of `userId`'s following list. */
+function invalidateFollowing(userId) {
+  if (!userId) return;
+  followingCache.deletePrefix(`following:${userId}:`);
 }
 
 function placesNearbyKey({ lat, lng, radiusMeters, limit }) {
@@ -163,6 +211,9 @@ module.exports = {
   friendshipStreaksCache,
   placesNearbyCache,
   profileViewersCache,
+  chatRepairCache,
+  followersCache,
+  followingCache,
   meKey,
   storyFeedKey,
   publicProfileKey,
@@ -172,6 +223,9 @@ module.exports = {
   friendshipStreaksKey,
   placesNearbyKey,
   profileViewersKey,
+  chatRepairKey,
+  followersKey,
+  followingKey,
   roundCoord,
   invalidateUser,
   invalidateUsername,
@@ -180,4 +234,6 @@ module.exports = {
   invalidatePlacesNearby,
   invalidateStampsCatalog,
   invalidateProfileViewers,
+  invalidateFollowers,
+  invalidateFollowing,
 };

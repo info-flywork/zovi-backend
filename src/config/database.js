@@ -17,8 +17,11 @@ function getPool() {
     password: env.db.password,
     database: env.db.database,
     waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0,
+    connectionLimit: env.db.connectionLimit,
+    // Bounded queue: once full, a get-connection request fails fast with
+    // ER_CON_COUNT_ERROR instead of piling up silently behind a saturated pool.
+    queueLimit: env.db.queueLimit,
+    connectTimeout: env.db.connectTimeoutMs,
     enableKeepAlive: true,
     keepAliveInitialDelay: 10_000,
     // DATETIME columns are stored/read as UTC wall-clock.

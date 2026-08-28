@@ -38,6 +38,22 @@ function haversineMetersSql() {
   )`;
 }
 
+/**
+ * Approximate lat/lng box containing every point within radiusMeters — lets
+ * the (lat, lng) index prefilter rows before the exact HAVING/haversine pass.
+ */
+function boundingBox(lat, lng, radiusMeters) {
+  const latDelta = radiusMeters / 111_320;
+  const cosLat = Math.max(Math.cos((Number(lat) * Math.PI) / 180), 0.01);
+  const lngDelta = radiusMeters / (111_320 * cosLat);
+  return {
+    minLat: Number(lat) - latDelta,
+    maxLat: Number(lat) + latDelta,
+    minLng: Number(lng) - lngDelta,
+    maxLng: Number(lng) + lngDelta,
+  };
+}
+
 function parsePhotoUrls(raw) {
   if (!raw) return [];
   try {
@@ -175,6 +191,7 @@ class MapPresenceRepository {
    */
   async listFriendsNearby(viewerId, { lat, lng, radiusMeters = 50000, limit = 80 }) {
     const dist = haversineMetersSql();
+    const box = boundingBox(lat, lng, radiusMeters);
     const rows = await query(
       `SELECT
          mp.user_id,
@@ -225,6 +242,8 @@ class MapPresenceRepository {
        LEFT JOIN titles t ON t.id = up.equipped_title_id
        ${STAMP_JOIN}
        WHERE mp.user_id <> ?
+         AND mp.lat BETWEEN ? AND ?
+         AND mp.lng BETWEEN ? AND ?
          AND mp.updated_at > DATE_SUB(UTC_TIMESTAMP(3), INTERVAL ? MINUTE)
          AND mp.is_anonymous = 0
          AND NOT EXISTS (
@@ -247,6 +266,10 @@ class MapPresenceRepository {
         viewerId,
         CHECK_IN_MAP_TTL_HOURS,
         viewerId,
+        box.minLat,
+        box.maxLat,
+        box.minLng,
+        box.maxLng,
         PRESENCE_TTL_MINUTES,
         viewerId,
         viewerId,
@@ -263,6 +286,7 @@ class MapPresenceRepository {
    */
   async listAnonNearby(viewerId, { lat, lng, radiusMeters = 50000, limit = 80 }) {
     const dist = haversineMetersSql();
+    const box = boundingBox(lat, lng, radiusMeters);
     const rows = await query(
       `SELECT
          mp.user_id,
@@ -300,6 +324,8 @@ class MapPresenceRepository {
        LEFT JOIN titles t ON t.id = up.equipped_title_id
        ${STAMP_JOIN}
        WHERE mp.user_id <> ?
+         AND mp.lat BETWEEN ? AND ?
+         AND mp.lng BETWEEN ? AND ?
          AND mp.updated_at > DATE_SUB(UTC_TIMESTAMP(3), INTERVAL ? MINUTE)
          AND (
            COALESCE(up.account_privacy, 'public') = 'friends'
@@ -327,6 +353,10 @@ class MapPresenceRepository {
         lat,
         CHECK_IN_MAP_TTL_HOURS,
         viewerId,
+        box.minLat,
+        box.maxLat,
+        box.minLng,
+        box.maxLng,
         PRESENCE_TTL_MINUTES,
         viewerId,
         viewerId,
