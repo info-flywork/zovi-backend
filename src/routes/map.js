@@ -155,14 +155,26 @@ router.get('/places/photo', async (req, res, next) => {
       1600,
     );
 
-    const { buffer, contentType } = await fetchPlacePhoto(name, {
+    const result = await fetchPlacePhoto(name, {
       maxHeightPx,
     });
 
-    res.setHeader('Content-Type', contentType);
-    res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
-    res.setHeader('Content-Length', String(buffer.length));
-    return res.status(200).send(buffer);
+    // CDN redirect — client loads googleusercontent without our API key.
+    if (result.redirectUrl) {
+      res.setHeader(
+        'Cache-Control',
+        'public, max-age=86400, stale-while-revalidate=604800',
+      );
+      return res.redirect(302, result.redirectUrl);
+    }
+
+    res.setHeader('Content-Type', result.contentType || 'image/jpeg');
+    res.setHeader(
+      'Cache-Control',
+      'public, max-age=86400, stale-while-revalidate=604800',
+    );
+    res.setHeader('Content-Length', String(result.buffer.length));
+    return res.status(200).send(result.buffer);
   } catch (err) {
     logger.warn('places_photo_proxy_failed', {
       name: req.query?.name ?? null,

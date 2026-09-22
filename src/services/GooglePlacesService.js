@@ -176,8 +176,11 @@ function normalizePlaceItem(place) {
 }
 
 /**
- * Fetch a Places photo via the server-side API key (IP allowlist friendly).
- * @returns {Promise<{ buffer: Buffer, contentType: string }>}
+ * Resolve a Places photo to bytes (or a CDN redirect URL).
+ * Uses skipHttpRedirect=true so we never forward Google's "API KEY required"
+ * error image as if it were a real photo.
+ *
+ * @returns {Promise<{ buffer: Buffer, contentType: string } | { redirectUrl: string }>}
  */
 async function fetchPlacePhoto(photoName, { maxHeightPx = 320 } = {}) {
   if (!env.googlePlaces?.apiKey) {
@@ -195,41 +198,56 @@ async function fetchPlacePhoto(photoName, { maxHeightPx = 320 } = {}) {
 
   const height = Math.min(Math.max(Number(maxHeightPx) || 320, 1), 1600);
   const key = env.googlePlaces.apiKey;
-  // Media endpoint accepts key as query param; header alone is unreliable.
-  const url =
-    `https://places.googleapis.com/v1/${String(photoName).trim()}/media` +
-    `?maxHeightPx=${height}&skipHttpRedirect=false` +
+  const name = String(photoName).trim();
+
+  // 1) Ask Places for a short-lived CDN URI (no key needed to fetch the URI).
+  const metaUrl =
+    `https://places.googleapis.com/v1/${name}/media` +
+    `?maxHeightPx=${height}&skipHttpRedirect=true` +
     `&key=${encodeURIComponent(key)}`;
 
-  const response = await axios.get(url, {
-    timeout: 12_000,
-    responseType: 'arraybuffer',
-    maxRedirects: 5,
-    headers: {
-      'X-Goog-Api-Key': key,
-    },
-    validateStatus: (s) => s >= 200 && s < 300,
-  });
-
-  const contentType =
-    String(response.headers['content-type'] || '').split(';')[0].trim() ||
-    'image/jpeg';
-
-  // Google sometimes returns a text/HTML error body with 200-ish redirects
-  // that axios resolves — reject non-image payloads so the client can fallback.
-  if (!contentType.startsWith('image/')) {
-    const err = new Error(
-      `Places photo upstream returned non-image content-type: ${contentType}`,
+  let meta;
+  try {
+    meta = await axios.get(metaUrl, {
+      timeout: 12_000,
+      headers: {
+        'X-Goog-Api-Key': key,
+        Accept: 'application/json',
+      },
+      validateStatus: (s) => s >= 200 && s < 300,
+    });
+  } catch (err) {
+    const upstream = err?.response?.data;
+    const detail =
+      typeof upstream === 'object'
+        ? upstream?.error?.message || JSON.stringify(upstream).slice(0, 300)
+        : String(upstream || err.message || '').slice(0, 300);
+    logger.warn('places_photo_meta_failed', {
+      name,
+      status: err?.response?.status || null,
+      detail,
+    });
+    const wrapped = new Error(
+      detail || 'Places photo media metadata request failed',
     );
+    wrapped.status = 502;
+    wrapped.code = 'PLACES_PHOTO_UPSTREAM';
+    wrapped.response = err?.response;
+    throw wrapped;
+  }
+
+  const photoUri =
+    typeof meta.data?.photoUri === 'string' ? meta.data.photoUri.trim() : '';
+  if (!photoUri.startsWith('http')) {
+    const err = new Error('Places photo media did not return photoUri');
     err.status = 502;
-    err.code = 'PLACES_PHOTO_BAD_UPSTREAM';
+    err.code = 'PLACES_PHOTO_NO_URI';
     throw err;
   }
 
-  return {
-    buffer: Buffer.from(response.data),
-    contentType,
-  };
+  // Prefer redirect: Flutter Image.network follows it, and the CDN URL does not
+  // need our Places API key (avoids leaking key + IP-restriction issues).
+  return { redirectUrl: photoUri };
 }
 
 class GooglePlacesService {
