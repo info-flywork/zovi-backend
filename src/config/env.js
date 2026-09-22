@@ -65,6 +65,13 @@ const env = {
   googlePlaces: {
     apiKey: process.env.GOOGLE_PLACES_API_KEY || '',
   },
+  // Absolute origin used for Places photo proxy URLs returned to clients.
+  // Must match the public API host the Flutter app calls (StringConstants.baseUrl).
+  publicBaseUrl: (
+    process.env.PUBLIC_BASE_URL ||
+    process.env.API_PUBLIC_URL ||
+    'https://zovi.fly-work.com'
+  ).replace(/\/$/, ''),
   revenueCat: {
     webhookAuth:
       process.env.REVENUECAT_WEBHOOK_AUTH ||

@@ -10,7 +10,11 @@ const {
   placesNearbyCache,
   placesNearbyKey,
 } = require('../cache/appCache');
-const { GooglePlacesService } = require('../services/GooglePlacesService');
+const {
+  GooglePlacesService,
+  fetchPlacePhoto,
+  isValidPlacesPhotoName,
+} = require('../services/GooglePlacesService');
 const { logger } = require('../utils/logger');
 
 const router = express.Router();
@@ -114,6 +118,72 @@ router.get('/nearby', requireFirebaseAuth, async (req, res, next) => {
 
     return res.json({ success: true, data: { items } });
   } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * GET /map/places/photo?name=places/.../photos/...&maxHeightPx=320
+ * Proxies Google Places photo media with the server API key so mobile clients
+ * never hit an IP-restricted key (fixes "API KEY required" on map thumbs).
+ * Unauthenticated on purpose — Image.network cannot send Bearer tokens.
+ * Path shape is strictly validated.
+ */
+router.get('/places/photo', async (req, res, next) => {
+  try {
+    const name = String(req.query.name || '').trim();
+    if (!isValidPlacesPhotoName(name)) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_PHOTO_NAME',
+          message: 'name must be places/{id}/photos/{id}',
+        },
+      });
+    }
+
+    const maxHeightPx = Math.min(
+      Math.max(Number(req.query.maxHeightPx) || 320, 1),
+      1600,
+    );
+
+    const { buffer, contentType } = await fetchPlacePhoto(name, {
+      maxHeightPx,
+    });
+
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
+    res.setHeader('Content-Length', String(buffer.length));
+    return res.status(200).send(buffer);
+  } catch (err) {
+    logger.warn('places_photo_proxy_failed', {
+      name: req.query?.name ?? null,
+      message: err?.message,
+      code: err?.code,
+      status: err?.status || err?.response?.status || null,
+    });
+    if (err?.status === 400 || err?.code === 'INVALID_PHOTO_NAME') {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_PHOTO_NAME', message: err.message },
+      });
+    }
+    if (err?.code === 'PLACES_NOT_CONFIGURED') {
+      return res.status(503).json({
+        success: false,
+        error: { code: 'PLACES_NOT_CONFIGURED', message: err.message },
+      });
+    }
+    const upstream = err?.response?.status;
+    if (upstream === 403 || upstream === 401) {
+      return res.status(502).json({
+        success: false,
+        error: {
+          code: 'PLACES_PHOTO_FORBIDDEN',
+          message: 'Places photo upstream rejected the server API key',
+        },
+      });
+    }
     return next(err);
   }
 });

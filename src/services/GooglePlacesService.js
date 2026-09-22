@@ -111,12 +111,71 @@ function haversineMeters(lat1, lng1, lat2, lng2) {
   return 2 * R * Math.asin(Math.sqrt(a));
 }
 
-function buildPhotoUrl(photoName) {
+/**
+ * Places photo resource names look like:
+ *   places/ChIJ…/photos/AWnL…
+ * Clients must never see GOOGLE_PLACES_API_KEY (IP-restricted server key).
+ * Return a same-origin proxy URL instead.
+ */
+function isValidPlacesPhotoName(photoName) {
   const name = String(photoName || '').trim();
-  if (!name) return null;
-  const key = env.googlePlaces?.apiKey || '';
-  if (!key) return null;
-  return `https://places.googleapis.com/v1/${name}/media?maxHeightPx=320&key=${encodeURIComponent(key)}`;
+  if (!name || name.includes('..') || name.includes('\\')) return false;
+  return /^places\/[^/?#]+\/photos\/[^/?#]+$/.test(name);
+}
+
+function buildPhotoUrl(photoName, { maxHeightPx = 320 } = {}) {
+  if (!isValidPlacesPhotoName(photoName)) return null;
+  if (!env.googlePlaces?.apiKey) return null;
+  const height = Math.min(Math.max(Number(maxHeightPx) || 320, 1), 1600);
+  const base = env.publicBaseUrl || 'https://zovi.fly-work.com';
+  const qs = new URLSearchParams({
+    name: String(photoName).trim(),
+    maxHeightPx: String(height),
+  });
+  return `${base}/map/places/photo?${qs.toString()}`;
+}
+
+/**
+ * Fetch a Places photo via the server-side API key (IP allowlist friendly).
+ * @returns {Promise<{ buffer: Buffer, contentType: string }>}
+ */
+async function fetchPlacePhoto(photoName, { maxHeightPx = 320 } = {}) {
+  if (!env.googlePlaces?.apiKey) {
+    const err = new Error('GOOGLE_PLACES_API_KEY is not configured');
+    err.status = 503;
+    err.code = 'PLACES_NOT_CONFIGURED';
+    throw err;
+  }
+  if (!isValidPlacesPhotoName(photoName)) {
+    const err = new Error('Invalid Places photo name');
+    err.status = 400;
+    err.code = 'INVALID_PHOTO_NAME';
+    throw err;
+  }
+
+  const height = Math.min(Math.max(Number(maxHeightPx) || 320, 1), 1600);
+  const url =
+    `https://places.googleapis.com/v1/${String(photoName).trim()}/media` +
+    `?maxHeightPx=${height}&skipHttpRedirect=false`;
+
+  const response = await axios.get(url, {
+    timeout: 12_000,
+    responseType: 'arraybuffer',
+    maxRedirects: 5,
+    headers: {
+      'X-Goog-Api-Key': env.googlePlaces.apiKey,
+    },
+    validateStatus: (s) => s >= 200 && s < 300,
+  });
+
+  const contentType =
+    String(response.headers['content-type'] || '').split(';')[0].trim() ||
+    'image/jpeg';
+
+  return {
+    buffer: Buffer.from(response.data),
+    contentType,
+  };
 }
 
 class GooglePlacesService {
@@ -260,4 +319,9 @@ class GooglePlacesService {
   }
 }
 
-module.exports = { GooglePlacesService };
+module.exports = {
+  GooglePlacesService,
+  buildPhotoUrl,
+  fetchPlacePhoto,
+  isValidPlacesPhotoName,
+};
