@@ -14,12 +14,20 @@ const {
   GooglePlacesService,
   fetchPlacePhoto,
   isValidPlacesPhotoName,
+  normalizePlaceItem,
 } = require('../services/GooglePlacesService');
 const { logger } = require('../utils/logger');
 
 const router = express.Router();
 const presence = new MapPresenceRepository();
 const places = new GooglePlacesService();
+
+// Drop any pre-proxy Places cache entries that still embed Google API keys.
+try {
+  placesNearbyCache.clear?.();
+} catch (_) {
+  // older TtlCache may not expose clear — ignore
+}
 
 function parseCoord(value) {
   const n = Number(value);
@@ -216,10 +224,18 @@ router.get('/places/nearby', requireFirebaseAuth, async (req, res, next) => {
     }
 
     const cacheHit = Array.isArray(cached) && cached.length > 0;
-    const items = cacheHit
+    const rawItems = cacheHit
       ? cached
       : await places.searchNearby({ lat, lng, radiusMeters, limit });
+    // Always rewrite photo URLs so legacy Google+key links never reach clients
+    // even if they were cached before the proxy shipped.
+    const items = Array.isArray(rawItems)
+      ? rawItems.map((item) => normalizePlaceItem(item))
+      : [];
     if (!cacheHit && items.length > 0) {
+      placesNearbyCache.set(key, items);
+    } else if (cacheHit && items.length > 0) {
+      // Refresh cache entry with rewritten URLs.
       placesNearbyCache.set(key, items);
     }
     logger.info('places_nearby_ok', {

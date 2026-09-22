@@ -123,6 +123,28 @@ function isValidPlacesPhotoName(photoName) {
   return /^places\/[^/?#]+\/photos\/[^/?#]+$/.test(name);
 }
 
+function extractPlacesPhotoName(photoUrl) {
+  const raw = String(photoUrl || '').trim();
+  if (!raw) return null;
+  if (isValidPlacesPhotoName(raw)) return raw;
+  try {
+    const u = new URL(raw);
+    // New proxy: /map/places/photo?name=places/.../photos/...
+    if (u.pathname.endsWith('/map/places/photo')) {
+      const name = u.searchParams.get('name');
+      return isValidPlacesPhotoName(name) ? name : null;
+    }
+    // Legacy direct Google media URL (had API key in query).
+    const m = u.pathname.match(
+      /\/v1\/(places\/[^/]+\/photos\/[^/]+)\/media\/?$/,
+    );
+    if (m && isValidPlacesPhotoName(m[1])) return m[1];
+  } catch (_) {
+    // ignore
+  }
+  return null;
+}
+
 function buildPhotoUrl(photoName, { maxHeightPx = 320 } = {}) {
   if (!isValidPlacesPhotoName(photoName)) return null;
   if (!env.googlePlaces?.apiKey) return null;
@@ -133,6 +155,24 @@ function buildPhotoUrl(photoName, { maxHeightPx = 320 } = {}) {
     maxHeightPx: String(height),
   });
   return `${base}/map/places/photo?${qs.toString()}`;
+}
+
+/** Rewrite legacy Google media URLs (with key) to our proxy. */
+function normalizePlacePhotoUrl(photoUrl) {
+  const raw = String(photoUrl || '').trim();
+  if (!raw) return null;
+  if (raw.includes('/map/places/photo?')) return raw;
+  const name = extractPlacesPhotoName(raw);
+  if (!name) return raw;
+  return buildPhotoUrl(name) || raw;
+}
+
+function normalizePlaceItem(place) {
+  if (!place || typeof place !== 'object') return place;
+  return {
+    ...place,
+    photoUrl: normalizePlacePhotoUrl(place.photoUrl),
+  };
 }
 
 /**
@@ -154,16 +194,19 @@ async function fetchPlacePhoto(photoName, { maxHeightPx = 320 } = {}) {
   }
 
   const height = Math.min(Math.max(Number(maxHeightPx) || 320, 1), 1600);
+  const key = env.googlePlaces.apiKey;
+  // Media endpoint accepts key as query param; header alone is unreliable.
   const url =
     `https://places.googleapis.com/v1/${String(photoName).trim()}/media` +
-    `?maxHeightPx=${height}&skipHttpRedirect=false`;
+    `?maxHeightPx=${height}&skipHttpRedirect=false` +
+    `&key=${encodeURIComponent(key)}`;
 
   const response = await axios.get(url, {
     timeout: 12_000,
     responseType: 'arraybuffer',
     maxRedirects: 5,
     headers: {
-      'X-Goog-Api-Key': env.googlePlaces.apiKey,
+      'X-Goog-Api-Key': key,
     },
     validateStatus: (s) => s >= 200 && s < 300,
   });
@@ -171,6 +214,17 @@ async function fetchPlacePhoto(photoName, { maxHeightPx = 320 } = {}) {
   const contentType =
     String(response.headers['content-type'] || '').split(';')[0].trim() ||
     'image/jpeg';
+
+  // Google sometimes returns a text/HTML error body with 200-ish redirects
+  // that axios resolves — reject non-image payloads so the client can fallback.
+  if (!contentType.startsWith('image/')) {
+    const err = new Error(
+      `Places photo upstream returned non-image content-type: ${contentType}`,
+    );
+    err.status = 502;
+    err.code = 'PLACES_PHOTO_BAD_UPSTREAM';
+    throw err;
+  }
 
   return {
     buffer: Buffer.from(response.data),
@@ -324,4 +378,7 @@ module.exports = {
   buildPhotoUrl,
   fetchPlacePhoto,
   isValidPlacesPhotoName,
+  normalizePlacePhotoUrl,
+  normalizePlaceItem,
+  extractPlacesPhotoName,
 };
